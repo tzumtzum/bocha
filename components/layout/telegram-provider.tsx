@@ -9,6 +9,8 @@ import {
   viewport,
   mountClosingBehavior,
   enableClosingConfirmation,
+  mountSwipeBehavior,
+  disableVerticalSwipes,
   type ThemeParams,
 } from "@telegram-apps/sdk";
 
@@ -51,6 +53,9 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
       // Prevent accidental swipe-to-close with a native confirmation dialog
       mountClosingBehavior();
       enableClosingConfirmation();
+      // Disable vertical swipe-to-close (Bot API 7.7+)
+      mountSwipeBehavior();
+      disableVerticalSwipes();
     } catch (err) {
       console.error("Telegram SDK init error:", err);
     }
