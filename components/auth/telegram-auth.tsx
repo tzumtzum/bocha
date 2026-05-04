@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, MessageCircle } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { isTMA } from "@telegram-apps/sdk";
 
 export function TelegramAuthButton({ onLoadingChange }: { onLoadingChange?: (loading: boolean) => void }) {
   const router = useRouter();
@@ -16,20 +17,19 @@ export function TelegramAuthButton({ onLoadingChange }: { onLoadingChange?: (loa
 
   useEffect(() => {
     const checkTelegram = () => {
-      if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+      const inTg = isTMA() || (typeof window !== "undefined" && !!window.Telegram?.WebApp);
+      if (inTg) {
         setIsInTelegram(true);
-        const initData = window.Telegram.WebApp.initData;
+        const initData = window.Telegram?.WebApp?.initData;
         if (initData) {
           handleTelegramAuth(initData);
         }
       }
     };
 
-    // Try immediately
+    // Try immediately and after a short delay
     checkTelegram();
-
-    // Also retry after a short delay in case Telegram injects WebApp late
-    const timer = setTimeout(checkTelegram, 500);
+    const timer = setTimeout(checkTelegram, 300);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
