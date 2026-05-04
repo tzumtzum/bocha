@@ -25,8 +25,8 @@ export default function LoginPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    supabase.auth.getSession().then(({ data }: { data: { session: unknown } }) => {
+      if (data.session) {
         router.replace("/dashboard");
       } else {
         setCheckingSession(false);
