@@ -78,8 +78,6 @@ export function TelegramAuthButton({ onLoadingChange }: { onLoadingChange?: (loa
     };
 
     checkTelegram();
-    const timer = setTimeout(checkTelegram, 500);
-    return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -89,12 +87,6 @@ export function TelegramAuthButton({ onLoadingChange }: { onLoadingChange?: (loa
     setAuthError(null);
 
     try {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        router.replace("/dashboard");
-        return;
-      }
-
       const res = await fetch("/api/auth/telegram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

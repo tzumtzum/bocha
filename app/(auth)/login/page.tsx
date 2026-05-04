@@ -19,17 +19,15 @@ export default function LoginPage() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [checkingSession, setCheckingSession] = useState(true);
 
   const router = useRouter();
   const supabase = createClient();
 
+  // Redirect in background if already logged in — no spinner blocking the UI
   useEffect(() => {
     supabase.auth.getSession().then(({ data }: { data: { session: unknown } }) => {
       if (data.session) {
         router.replace("/dashboard");
-      } else {
-        setCheckingSession(false);
       }
     });
   }, [router, supabase]);
@@ -118,17 +116,6 @@ export default function LoginPage() {
 
   const isDemoEnabled =
     process.env.NEXT_PUBLIC_ENABLE_DEMO === "true" || isPlaceholder;
-
-  if (checkingSession) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-          <p className="text-slate-500 text-sm">Checking session...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">

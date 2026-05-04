@@ -28,28 +28,20 @@ describe("LoginPage", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://placeholder.supabase.co");
   });
 
-  it("renders login form after session check", async () => {
+  it("renders login form immediately", () => {
     render(<LoginPage />);
-    await waitFor(() => {
-      expect(screen.getByText(/welcome back/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText(/welcome back/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
   });
 
-  it("shows Try Demo Mode button when placeholder URL is set", async () => {
+  it("shows Try Demo Mode button when placeholder URL is set", () => {
     render(<LoginPage />);
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /try demo mode/i })).toBeInTheDocument();
-    });
+    expect(screen.getByRole("button", { name: /try demo mode/i })).toBeInTheDocument();
   });
 
   it("redirects to dashboard on successful sign in", async () => {
     render(<LoginPage />);
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    });
-
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
 
@@ -62,11 +54,9 @@ describe("LoginPage", () => {
     });
   });
 
-  it("toggles between sign in and sign up modes", async () => {
+  it("toggles between sign in and sign up modes", () => {
     render(<LoginPage />);
-    await waitFor(() => {
-      expect(screen.getByText(/welcome back/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText(/welcome back/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /sign up/i }));
     expect(screen.getByText(/create account/i)).toBeInTheDocument();
