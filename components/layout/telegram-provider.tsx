@@ -22,10 +22,11 @@ interface TelegramContextValue {
 
 const TelegramContext = createContext<TelegramContextValue | null>(null);
 
-function useSdkSignal<T>(signal: { sub: (fn: (current: T) => void) => () => void; (): T }): T {
+function useSdkSignal<T>(signal: { sub: (fn: (current: T) => void) => () => void; (): T }, fallback: T): T {
   return useSyncExternalStore(
     (cb) => signal.sub(() => cb()),
-    () => signal()
+    () => signal(),
+    () => fallback
   );
 }
 
@@ -54,14 +55,14 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
 
   const isInTelegram = isTMA();
 
-  const colorScheme = useSdkSignal(miniApp.isDark)
+  const colorScheme = useSdkSignal(miniApp.isDark, false)
     ? "dark"
     : "light";
 
-  const tp = useSdkSignal(themeParams.state);
-  const vpHeight = useSdkSignal(viewport.stableHeight);
-  const safeArea = useSdkSignal(viewport.safeAreaInsets);
-  const contentSafeArea = useSdkSignal(viewport.contentSafeAreaInsets);
+  const tp = useSdkSignal(themeParams.state, {} as ThemeParams);
+  const vpHeight = useSdkSignal(viewport.stableHeight, 0);
+  const safeArea = useSdkSignal(viewport.safeAreaInsets, { top: 0, right: 0, bottom: 0, left: 0 });
+  const contentSafeArea = useSdkSignal(viewport.contentSafeAreaInsets, { top: 0, right: 0, bottom: 0, left: 0 });
 
   return (
     <TelegramContext.Provider
