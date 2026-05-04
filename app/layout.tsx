@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/layout/providers";
 import { Toaster } from "sonner";
+import { ErrorBoundary } from "@/components/layout/error-boundary";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -35,17 +36,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers>
-          {children}
-          <Toaster
-            position="top-center"
-            richColors
-            closeButton
-            toastOptions={{
-              className: "text-sm",
-            }}
-          />
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            {children}
+            <Toaster
+              position="top-center"
+              richColors
+              closeButton
+              toastOptions={{
+                className: "text-sm",
+              }}
+            />
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   );
