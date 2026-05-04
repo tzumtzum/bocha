@@ -20,8 +20,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/manifest.json") ||
     pathname.startsWith("/icons") ||
     pathname.startsWith("/sw.js") ||
-    pathname.startsWith("/workbox-") ||
-    pathname === "/login"
+    pathname.startsWith("/workbox-")
   ) {
     return response;
   }
@@ -31,13 +30,13 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Not authenticated → redirect to login
-  if (!user) {
+  // Not authenticated → redirect to login (unless already on login)
+  if (!user && pathname !== "/login") {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Authenticated but accessing login → redirect to dashboard
-  if (pathname === "/login") {
+  if (user && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
