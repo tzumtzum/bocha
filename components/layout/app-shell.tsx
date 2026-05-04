@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SyncIndicator } from "@/components/layout/sync-indicator";
 import { DemoBanner } from "@/components/layout/demo-banner";
@@ -14,7 +15,14 @@ export function AppShell({
   hasBirds: boolean;
 }) {
   const ctx = useTelegramContext();
-  const isInTelegram = ctx?.isInTelegram ?? false;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // During SSR and initial hydration, assume non-Telegram to avoid mismatch
+  const isInTelegram = mounted ? (ctx?.isInTelegram ?? false) : false;
 
   // Apply content safe area insets when in Telegram
   const safeAreaStyle = isInTelegram
