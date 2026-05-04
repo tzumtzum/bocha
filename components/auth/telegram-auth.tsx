@@ -8,6 +8,47 @@ import { Loader2, MessageCircle } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { isTMA } from "@telegram-apps/sdk";
 
+function getInitDataFromUrl(): string | null {
+  try {
+    // Telegram sometimes passes initData in URL query or hash
+    const url = new URL(window.location.href);
+    const fromSearch = url.searchParams.get("tgWebAppData");
+    if (fromSearch) return fromSearch;
+
+    const hash = window.location.hash;
+    if (hash.includes("tgWebAppData=")) {
+      const match = hash.match(/tgWebAppData=([^&]+)/);
+      if (match) return decodeURIComponent(match[1]);
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function getInitData(): { data: string | null; source: string } {
+  // 1. Try raw window.Telegram.WebApp.initData
+  const raw = window.Telegram?.WebApp?.initData;
+  if (raw) return { data: raw, source: "webapp.initData" };
+
+  // 2. Try initDataUnsafe hash
+  const unsafe = window.Telegram?.WebApp?.initDataUnsafe;
+  if (unsafe?.hash) {
+    const params = new URLSearchParams();
+    params.set("auth_date", String(unsafe.auth_date));
+    params.set("hash", unsafe.hash);
+    if (unsafe.user) params.set("user", JSON.stringify(unsafe.user));
+    if (unsafe.query_id) params.set("query_id", unsafe.query_id);
+    return { data: params.toString(), source: "initDataUnsafe" };
+  }
+
+  // 3. Try URL params
+  const fromUrl = getInitDataFromUrl();
+  if (fromUrl) return { data: fromUrl, source: "url" };
+
+  return { data: null, source: "none" };
+}
+
 export function TelegramAuthButton({ onLoadingChange }: { onLoadingChange?: (loading: boolean) => void }) {
   const router = useRouter();
   const supabase = createClient();
@@ -21,31 +62,18 @@ export function TelegramAuthButton({ onLoadingChange }: { onLoadingChange?: (loa
       try {
         const hasTma = isTMA();
         const hasWebApp = typeof window !== "undefined" && !!window.Telegram?.WebApp;
-        const initData = window.Telegram?.WebApp?.initData;
-        const initDataUnsafe = window.Telegram?.WebApp?.initDataUnsafe;
+        const { data, source } = getInitData();
 
         if (hasTma || hasWebApp) {
           setIsInTelegram(true);
-          setDebugInfo(`initData length: ${initData?.length ?? 0}`);
+          setDebugInfo(`source: ${source} | length: ${data?.length ?? 0}`);
 
-          if (initData) {
-            handleTelegramAuth(initData);
-          } else if (initDataUnsafe?.hash) {
-            // Fallback: build initData string from initDataUnsafe if raw initData is missing
-            const params = new URLSearchParams();
-            params.set("auth_date", String(initDataUnsafe.auth_date));
-            params.set("hash", initDataUnsafe.hash);
-            if (initDataUnsafe.user) {
-              params.set("user", JSON.stringify(initDataUnsafe.user));
-            }
-            if (initDataUnsafe.query_id) {
-              params.set("query_id", initDataUnsafe.query_id);
-            }
-            handleTelegramAuth(params.toString());
+          if (data) {
+            handleTelegramAuth(data);
           }
         }
       } catch (err) {
-        setDebugInfo(`Detection error: ${err instanceof Error ? err.message : String(err)}`);
+        setDebugInfo(`err: ${err instanceof Error ? err.message : String(err)}`);
       }
     };
 
@@ -116,24 +144,11 @@ export function TelegramAuthButton({ onLoadingChange }: { onLoadingChange?: (loa
       <Button
         className="w-full bg-[#0088cc] hover:bg-[#0077b3] text-white"
         onClick={() => {
-          const initData = window.Telegram?.WebApp?.initData;
-          const initDataUnsafe = window.Telegram?.WebApp?.initDataUnsafe;
-
-          if (initData) {
-            handleTelegramAuth(initData);
-          } else if (initDataUnsafe?.hash) {
-            const params = new URLSearchParams();
-            params.set("auth_date", String(initDataUnsafe.auth_date));
-            params.set("hash", initDataUnsafe.hash);
-            if (initDataUnsafe.user) {
-              params.set("user", JSON.stringify(initDataUnsafe.user));
-            }
-            if (initDataUnsafe.query_id) {
-              params.set("query_id", initDataUnsafe.query_id);
-            }
-            handleTelegramAuth(params.toString());
+          const { data, source } = getInitData();
+          if (data) {
+            handleTelegramAuth(data);
           } else {
-            setAuthError("No Telegram initData found. Try closing and reopening the app.");
+            setAuthError(`No initData found (${source}). Close and reopen from the bot menu.`);
           }
         }}
         disabled={isLoading}
