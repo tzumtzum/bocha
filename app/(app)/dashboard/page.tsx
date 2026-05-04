@@ -12,7 +12,7 @@ import { StreakCounter } from "@/components/birds/streak-counter";
 import { ReminderBanner } from "@/components/layout/reminder-banner";
 import { CombinedWeightChart } from "@/components/charts/combined-weight-chart";
 import { QuickLogSheet } from "@/components/logs/quick-log-sheet";
-import { Plus, Crown, Sparkles } from "lucide-react";
+import { Plus, Crown, Sparkles, Feather } from "lucide-react";
 import { getTodayInTimezone, calculateStreak } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useBirds, useLogs, useProfile, useUpgradeToPro } from "@/lib/hooks/use-birds";
@@ -125,9 +125,17 @@ export default function DashboardPage() {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-          Your Flock
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+            Your Flock
+          </h1>
+          {isPro && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
+              <Feather className="w-3 h-3" />
+              Pro
+            </span>
+          )}
+        </div>
         <StreakCounter streak={streak} />
       </div>
 
