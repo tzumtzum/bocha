@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useTelegramContext } from "./telegram-provider";
 import { useTheme } from "next-themes";
-import { miniApp } from "@telegram-apps/sdk";
+import { init, miniApp } from "@telegram-apps/sdk";
 
 export function TelegramThemeSync() {
   const ctx = useTelegramContext();
@@ -19,10 +19,15 @@ export function TelegramThemeSync() {
   useEffect(() => {
     if (!ctx?.isInTelegram) return;
 
-    const unbind = miniApp.bindCssVars();
-    return () => {
-      unbind?.();
-    };
+    try {
+      init();
+      const unbind = miniApp.bindCssVars();
+      return () => {
+        unbind?.();
+      };
+    } catch {
+      // SDK not ready or not supported — ignore
+    }
   }, [ctx?.isInTelegram]);
 
   return null;
@@ -47,6 +52,7 @@ export function TelegramSafeArea() {
 
     // Set header/background colors to match Telegram
     try {
+      init();
       miniApp.setHeaderColor("secondary_bg_color");
       miniApp.setBackgroundColor("bg_color");
       miniApp.setBottomBarColor("bottom_bar_bg_color");
