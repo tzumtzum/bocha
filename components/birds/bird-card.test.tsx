@@ -2,10 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { BirdCard } from "./bird-card";
 
-const mockPush = vi.fn();
-
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: vi.fn() }),
 }));
 
 describe("BirdCard", () => {
@@ -48,12 +46,10 @@ describe("BirdCard", () => {
     expect(screen.getByText("⚠️")).toBeInTheDocument();
   });
 
-  it("navigates to bird detail when card is clicked", () => {
+  it("links to bird detail page", () => {
     render(<BirdCard bird={mockBird} hasTodayLog={true} recentLogs={mockLogs} />);
-    const card = screen.getByText("Bobo").closest("div[class*='cursor-pointer']")
-      ?? screen.getByText("Bobo").closest("div");
-    if (card) fireEvent.click(card);
-    expect(mockPush).toHaveBeenCalledWith("/birds/bird-1");
+    const link = screen.getByText("Bobo").closest("a");
+    expect(link).toHaveAttribute("href", "/birds/bird-1");
   });
 
   it("shows quick log plus button when today is not logged", () => {
