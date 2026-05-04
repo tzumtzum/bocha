@@ -55,5 +55,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Prevent overscroll pull-to-close in Telegram Mini App */
+    overscroll-behavior-y: contain;
   }
 }

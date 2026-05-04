@@ -7,6 +7,8 @@ import {
   miniApp,
   themeParams,
   viewport,
+  mountClosingBehavior,
+  enableClosingConfirmation,
   type ThemeParams,
 } from "@telegram-apps/sdk";
 
@@ -46,6 +48,9 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
       void viewport.mount();
       void themeParams.mount();
       viewport.expand();
+      // Prevent accidental swipe-to-close with a native confirmation dialog
+      mountClosingBehavior();
+      enableClosingConfirmation();
     } catch (err) {
       console.error("Telegram SDK init error:", err);
     }
