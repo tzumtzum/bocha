@@ -5,7 +5,13 @@ import { usePathname } from "next/navigation";
 import { Home, Settings, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function BottomNav({ hasBirds }: { hasBirds: boolean }) {
+export function BottomNav({
+  hasBirds,
+  safeAreaBottom = 0,
+}: {
+  hasBirds: boolean;
+  safeAreaBottom?: number;
+}) {
   const pathname = usePathname();
 
   const navItems = [
@@ -17,7 +23,10 @@ export function BottomNav({ hasBirds }: { hasBirds: boolean }) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 z-50">
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 z-50"
+      style={{ paddingBottom: safeAreaBottom }}
+    >
       <div className="max-w-md mx-auto flex items-center justify-around h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
