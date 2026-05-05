@@ -235,8 +235,14 @@ class MockPostgrestBuilder {
 
 class MockSupabaseClient {
   auth = {
-    getUser: () => Promise.resolve({ data: { user: DEMO_USER }, error: null }),
-    getSession: () => Promise.resolve({ data: { session: { user: DEMO_USER } }, error: null }),
+    getUser: () => {
+      seedData();
+      return Promise.resolve({ data: { user: DEMO_USER }, error: null });
+    },
+    getSession: () => {
+      seedData();
+      return Promise.resolve({ data: { session: { user: DEMO_USER } }, error: null });
+    },
     signInWithPassword: () => {
       setItem(LS_KEYS.user, DEMO_USER);
       seedData();

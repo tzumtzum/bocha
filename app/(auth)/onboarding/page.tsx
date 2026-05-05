@@ -151,7 +151,8 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Get user's default flock
+    // Get user's default flock (create one if missing)
+    let flockId: string | undefined;
     const { data: flockData } = await supabase
       .from("flock_members")
       .select("flock_id")
@@ -159,7 +160,30 @@ export default function OnboardingPage() {
       .eq("role", "owner")
       .single();
 
-    const flockId = flockData?.flock_id;
+    if (flockData?.flock_id) {
+      flockId = flockData.flock_id;
+    } else {
+      // No flock exists — create a default one
+      const { data: newFlock, error: flockError } = await supabase
+        .from("flocks")
+        .insert({ name: "My Flock", owner_id: user.id })
+        .select("id")
+        .single();
+
+      if (flockError || !newFlock) {
+        toast("Failed to create flock. Please try again.", { type: "error" });
+        setLoading(false);
+        return;
+      }
+
+      flockId = newFlock.id;
+
+      await supabase.from("flock_members").insert({
+        flock_id: flockId,
+        user_id: user.id,
+        role: "owner",
+      });
+    }
 
     const { error } = await supabase.from("birds").insert({
       user_id: user.id,
@@ -177,6 +201,7 @@ export default function OnboardingPage() {
 
     if (error) {
       console.error(error);
+      toast("Failed to create bird. Please try again.", { type: "error" });
       setLoading(false);
       return;
     }
