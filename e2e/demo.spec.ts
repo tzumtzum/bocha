@@ -146,13 +146,13 @@ test.describe("Bobo Demo Mode", () => {
     await expect(page.getByRole("dialog")).not.toBeVisible();
 
     // Verify updated weight is visible
-    await expect(page.getByText("123", { exact: false })).toBeVisible();
+    await expect(page.getByText("123.0 g")).toBeVisible();
 
     // Delete the log
     page.on("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: /delete log/i }).first().click();
 
     // Verify the log is removed
-    await expect(page.getByText("123", { exact: false })).not.toBeVisible();
+    await expect(page.getByText("123.0 g")).not.toBeVisible();
   });
 });

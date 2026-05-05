@@ -6,6 +6,9 @@ const LS_KEYS = {
   birds: "bobo_demo_birds",
   logs: "bobo_demo_logs",
   profile: "bobo_demo_profile",
+  flocks: "bobo_demo_flocks",
+  flock_members: "bobo_demo_flock_members",
+  flock_invites: "bobo_demo_flock_invites",
 };
 
 describe("MockSupabaseClient", () => {
@@ -167,5 +170,142 @@ describe("MockSupabaseClient", () => {
       expect(data.map((s: { name: string }) => s.name)).toContain("Cockatiel");
       expect(data.map((s: { name: string }) => s.name)).toContain("Other");
     });
+  });
+});
+
+
+describe("flocks table", () => {
+  beforeEach(async () => {
+    await mockClient.auth.signInWithPassword({
+      email: "demo@bobo.app",
+      password: "demo",
+    });
+  });
+
+  it("select returns the seeded flock", async () => {
+    const { data } = await mockClient.from("flocks").select();
+    expect(data).toHaveLength(1);
+    expect(data[0].name).toBe("My Flock");
+    expect(data[0].owner_id).toBe("demo-user-123");
+  });
+
+  it("eq filter works", async () => {
+    const flocks = JSON.parse(localStorage.getItem(LS_KEYS.flocks) || "[]");
+    const flockId = flocks[0].id;
+
+    const { data } = await mockClient
+      .from("flocks")
+      .select()
+      .eq("id", flockId);
+    expect(data).toHaveLength(1);
+    expect(data[0].name).toBe("My Flock");
+  });
+});
+
+describe("flock_members table", () => {
+  beforeEach(async () => {
+    await mockClient.auth.signInWithPassword({
+      email: "demo@bobo.app",
+      password: "demo",
+    });
+  });
+
+  it("select returns the seeded membership", async () => {
+    const { data } = await mockClient.from("flock_members").select();
+    expect(data).toHaveLength(1);
+    expect(data[0].role).toBe("owner");
+    expect(data[0].user_id).toBe("demo-user-123");
+  });
+
+  it("eq('user_id') filter works", async () => {
+    const { data } = await mockClient
+      .from("flock_members")
+      .select()
+      .eq("user_id", "demo-user-123");
+    expect(data).toHaveLength(1);
+    expect(data[0].role).toBe("owner");
+  });
+
+  it("eq('role') filter works", async () => {
+    const { data } = await mockClient
+      .from("flock_members")
+      .select()
+      .eq("role", "owner");
+    expect(data).toHaveLength(1);
+    expect(data[0].user_id).toBe("demo-user-123");
+  });
+});
+
+describe("flock_invites table", () => {
+  beforeEach(async () => {
+    await mockClient.auth.signInWithPassword({
+      email: "demo@bobo.app",
+      password: "demo",
+    });
+  });
+
+  it("insert adds an invite, select returns it, and eq('token') works", async () => {
+    const flocks = JSON.parse(localStorage.getItem(LS_KEYS.flocks) || "[]");
+    const flockId = flocks[0].id;
+
+    await mockClient.from("flock_invites").insert({
+      flock_id: flockId,
+      token: "abc-123",
+      role: "member",
+      expires_at: new Date().toISOString(),
+    });
+
+    const { data: all } = await mockClient.from("flock_invites").select();
+    expect(all).toHaveLength(1);
+    expect(all[0].token).toBe("abc-123");
+
+    const { data: filtered } = await mockClient
+      .from("flock_invites")
+      .select()
+      .eq("token", "abc-123");
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].role).toBe("member");
+  });
+});
+
+describe("birds via flock_id", () => {
+  beforeEach(async () => {
+    await mockClient.auth.signInWithPassword({
+      email: "demo@bobo.app",
+      password: "demo",
+    });
+  });
+
+  it("eq('flock_id') returns the bird", async () => {
+    const flocks = JSON.parse(localStorage.getItem(LS_KEYS.flocks) || "[]");
+    const flockId = flocks[0].id;
+
+    const { data } = await mockClient
+      .from("birds")
+      .select()
+      .eq("flock_id", flockId);
+    expect(data).toHaveLength(1);
+    expect(data[0].name).toBe("Bobo");
+  });
+});
+
+describe("mock client .in() operator", () => {
+  beforeEach(async () => {
+    await mockClient.auth.signInWithPassword({
+      email: "demo@bobo.app",
+      password: "demo",
+    });
+  });
+
+  it("query birds .in('flock_id', [flockId]) returns birds", async () => {
+    const flocks = JSON.parse(localStorage.getItem(LS_KEYS.flocks) || "[]");
+    const flockId = flocks[0].id;
+
+    const { data } = await mockClient
+      .from("birds")
+      .select()
+      .in("flock_id", [flockId]);
+    expect(data).toHaveLength(1);
+    expect(data[0].name).toBe("Bobo");
   });
 });

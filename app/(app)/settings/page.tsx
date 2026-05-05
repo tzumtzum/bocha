@@ -36,6 +36,7 @@ import {
   Copy,
   Check,
   UserPlus,
+  Bug,
 } from "lucide-react";
 import { useTelegramContext } from "@/components/layout/telegram-provider";
 import { toast, confirmDialog } from "@/lib/toast";
@@ -960,6 +961,17 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Separator />
+
+      <Button
+        variant="outline"
+        className="w-full justify-start"
+        onClick={() => router.push("/debug")}
+      >
+        <Bug className="w-4 h-4 mr-2" />
+        Debug Info
+      </Button>
 
       <Separator />
 

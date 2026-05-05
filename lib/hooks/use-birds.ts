@@ -23,7 +23,10 @@ export function useBirds() {
         .select("flock_id")
         .eq("user_id", user.id);
 
-      if (membershipError) throw membershipError;
+      if (membershipError) {
+        console.error("[useBirds] flock_members error:", membershipError);
+        throw membershipError;
+      }
 
       const flockIds = memberships?.map((m: { flock_id: string }) => m.flock_id) ?? [];
       if (flockIds.length === 0) return [];
@@ -35,7 +38,10 @@ export function useBirds() {
         .eq("status", "active")
         .order("sort_order", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[useBirds] birds query error:", error);
+        throw error;
+      }
       return data ?? [];
     },
     staleTime: 30 * 1000,
@@ -58,7 +64,10 @@ export function useLogs() {
         .select("flock_id")
         .eq("user_id", user.id);
 
-      if (membershipError) throw membershipError;
+      if (membershipError) {
+        console.error("[useLogs] flock_members error:", membershipError);
+        throw membershipError;
+      }
 
       const flockIds = memberships?.map((m: { flock_id: string }) => m.flock_id) ?? [];
       if (flockIds.length === 0) return [];
@@ -69,7 +78,10 @@ export function useLogs() {
         .select("id")
         .in("flock_id", flockIds);
 
-      if (birdsError) throw birdsError;
+      if (birdsError) {
+        console.error("[useLogs] birds query error:", birdsError);
+        throw birdsError;
+      }
 
       const birdIds = birdsData?.map((b: { id: string }) => b.id) ?? [];
       if (birdIds.length === 0) return [];
@@ -80,7 +92,10 @@ export function useLogs() {
         .in("bird_id", birdIds)
         .order("log_date", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[useLogs] daily_logs error:", error);
+        throw error;
+      }
       return data ?? [];
     },
     staleTime: 30 * 1000,

@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     // Check if already used
     if (invite.used_by) {
-      return NextResponse.json({ error: "Invite already used" }, { status: 400 });
+      return NextResponse.json({ error: "Invite already used" }, { status: 409 });
     }
 
     // Check expiration
