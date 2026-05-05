@@ -103,6 +103,7 @@ export async function POST(request: Request) {
     const email = `telegram_${telegramUser.id}@bobo.app`;
 
     // Check if a user already exists with this telegram_id
+    // Use String() coercion because metadata may store the id as string or number
     const { data: existingUsers, error: listError } = await adminClient.auth.admin.listUsers({
       perPage: 100,
     });
@@ -113,21 +114,27 @@ export async function POST(request: Request) {
     }
 
     const existingUser = existingUsers?.users?.find(
-      (u) => u.user_metadata?.telegram_id === telegramUser.id
+      (u) => String(u.user_metadata?.telegram_id) === String(telegramUser.id)
     );
 
-    let session;
+    // Fallback: look up by exact email if telegram_id metadata mismatch
+    const existingUserByEmail = !existingUser
+      ? existingUsers?.users?.find((u) => u.email === email)
+      : undefined;
 
-    if (existingUser) {
+    let session;
+    const userToAuth = existingUser ?? existingUserByEmail;
+
+    if (userToAuth) {
       // Existing user — retrieve their random password from telegram_auth
       const { data: creds, error: credsError } = await adminClient
         .from("telegram_auth")
         .select("password")
-        .eq("user_id", existingUser.id)
+        .eq("user_id", userToAuth.id)
         .single();
 
       if (credsError || !creds) {
-        console.error("[Telegram Auth] Credentials not found for user:", existingUser.id, credsError);
+        console.error("[Telegram Auth] Credentials not found for user:", userToAuth.id, credsError);
         return NextResponse.json(
           { error: "Authentication credentials not found" },
           { status: 500 }
@@ -148,6 +155,21 @@ export async function POST(request: Request) {
       }
 
       session = signInData.session;
+
+      // If we matched by email but metadata was missing/wrong, fix it now
+      if (existingUserByEmail && String(existingUserByEmail.user_metadata?.telegram_id) !== String(telegramUser.id)) {
+        console.log("[Telegram Auth] Updating metadata telegram_id for user:", userToAuth.id);
+        await adminClient.auth.admin.updateUserById(userToAuth.id, {
+          user_metadata: {
+            ...existingUserByEmail.user_metadata,
+            telegram_id: telegramUser.id,
+            first_name: telegramUser.first_name,
+            last_name: telegramUser.last_name,
+            username: telegramUser.username,
+            avatar_url: telegramUser.photo_url,
+          },
+        });
+      }
 
       // Update profile with latest Telegram info
       await adminClient
