@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { queueOfflineLog } from "@/lib/db/offline-queue";
 import { getTodayInTimezone } from "@/lib/utils";
 import { useWeightUnit } from "@/lib/hooks/use-weight-unit";
-import { ArrowLeft, Bird } from "lucide-react";
+import { Bird } from "lucide-react";
+import { PageBackButton } from "@/components/layout/page-back-button";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
@@ -174,11 +175,7 @@ function QuickLogForm() {
     return (
       <div className="p-4">
         <div className="flex items-center gap-2 mb-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-          </Button>
+          <PageBackButton href="/dashboard" />
           <h1 className="text-lg font-bold">Quick Log</h1>
         </div>
         <div className="animate-pulse space-y-3">
@@ -192,11 +189,7 @@ function QuickLogForm() {
   return (
     <div className="p-4 space-y-3 pb-24">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-        </Button>
+        <PageBackButton href="/dashboard" />
         <div>
           <h1 className="text-lg font-bold">Quick Log</h1>
           {multiBirds.length > 1 && (

@@ -25,7 +25,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  ArrowLeft,
   Archive,
   Download,
   ClipboardList,
@@ -34,6 +33,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { PageBackButton } from "@/components/layout/page-back-button";
 import { toast, confirmDialog } from "@/lib/toast";
 
 interface BirdDetail {
@@ -340,11 +340,7 @@ export default function BirdDetailPage() {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="shrink-0" asChild>
-          <Link href="/dashboard">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-        </Button>
+        <PageBackButton href="/dashboard" />
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0"

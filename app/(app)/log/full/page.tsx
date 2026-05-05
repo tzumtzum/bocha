@@ -13,8 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { queueOfflineLog } from "@/lib/db/offline-queue";
 import { getTodayInTimezone } from "@/lib/utils";
 import { useWeightUnit } from "@/lib/hooks/use-weight-unit";
-import { ArrowLeft, Loader2, Save, X, ImagePlus } from "lucide-react";
-import Link from "next/link";
+import { Loader2, Save, X, ImagePlus } from "lucide-react";
+import { PageBackButton } from "@/components/layout/page-back-button";
 import { compressImage, getBirdPhotoCount } from "@/lib/utils/photo";
 import { toast } from "@/lib/toast";
 import { SafeImage } from "@/components/ui/safe-image";
@@ -196,11 +196,7 @@ function FullLogForm() {
   return (
     <div className="p-4 space-y-4 pb-24">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-        </Button>
+        <PageBackButton href="/dashboard" />
         <h1 className="text-lg font-bold">Full Log</h1>
       </div>
 
