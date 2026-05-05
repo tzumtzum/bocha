@@ -45,6 +45,7 @@ export async function POST(request: Request) {
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
+      console.error("[Telegram Auth] TELEGRAM_BOT_TOKEN not set");
       return NextResponse.json(
         { error: "Telegram bot token not configured" },
         { status: 500 }
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
 
     const isValid = validateInitData(initData, botToken);
     if (!isValid) {
+      console.error("[Telegram Auth] Invalid initData signature");
       return NextResponse.json({ error: "Invalid initData signature" }, { status: 403 });
     }
 
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
     const authDate = parseInt(params.get("auth_date") ?? "0", 10);
     const now = Math.floor(Date.now() / 1000);
     if (!authDate || now - authDate > 86400) {
+      console.error("[Telegram Auth] initData expired", { authDate, now, diff: now - authDate });
       return NextResponse.json({ error: "initData expired" }, { status: 403 });
     }
 
@@ -82,6 +85,7 @@ export async function POST(request: Request) {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !serviceRoleKey) {
+      console.error("[Telegram Auth] Missing Supabase configuration");
       return NextResponse.json(
         { error: "Supabase service configuration missing" },
         { status: 500 }
@@ -99,9 +103,14 @@ export async function POST(request: Request) {
     const email = `telegram_${telegramUser.id}@bobo.app`;
 
     // Check if a user already exists with this telegram_id
-    const { data: existingUsers } = await adminClient.auth.admin.listUsers({
-      perPage: 1,
+    const { data: existingUsers, error: listError } = await adminClient.auth.admin.listUsers({
+      perPage: 100,
     });
+
+    if (listError) {
+      console.error("[Telegram Auth] Failed to list users:", listError);
+      return NextResponse.json({ error: "Failed to lookup user" }, { status: 500 });
+    }
 
     const existingUser = existingUsers?.users?.find(
       (u) => u.user_metadata?.telegram_id === telegramUser.id
@@ -118,6 +127,7 @@ export async function POST(request: Request) {
         .single();
 
       if (credsError || !creds) {
+        console.error("[Telegram Auth] Credentials not found for user:", existingUser.id, credsError);
         return NextResponse.json(
           { error: "Authentication credentials not found" },
           { status: 500 }
@@ -130,6 +140,7 @@ export async function POST(request: Request) {
       });
 
       if (signInError || !signInData.session) {
+        console.error("[Telegram Auth] Sign in failed:", signInError);
         return NextResponse.json(
           { error: signInError?.message ?? "Failed to authenticate" },
           { status: 500 }
@@ -166,6 +177,7 @@ export async function POST(request: Request) {
       });
 
       if (signUpError || !signUpData.user) {
+        console.error("[Telegram Auth] Create user failed:", signUpError);
         return NextResponse.json(
           { error: signUpError?.message ?? "Failed to create user" },
           { status: 500 }
@@ -196,6 +208,7 @@ export async function POST(request: Request) {
       });
 
       if (newSignInError || !newSignInData.session) {
+        console.error("[Telegram Auth] New user sign in failed:", newSignInError);
         return NextResponse.json(
           { error: newSignInError?.message ?? "Failed to establish session" },
           { status: 500 }
@@ -234,6 +247,7 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
+    console.error("[Telegram Auth] Unexpected error:", err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bird, Loader2, Mail, Play } from "lucide-react";
-import { TelegramAuthButton } from "@/components/auth/telegram-auth";
+import { TelegramAuthButton, useIsInTelegram } from "@/components/auth/telegram-auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,9 +19,11 @@ export default function LoginPage() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
+  const isInTelegram = useIsInTelegram();
 
   // Redirect in background if already logged in — no spinner blocking the UI
   useEffect(() => {
@@ -117,6 +119,8 @@ export default function LoginPage() {
   const isDemoEnabled =
     process.env.NEXT_PUBLIC_ENABLE_DEMO === "true" || isPlaceholder;
 
+  const showEmail = !isInTelegram || showEmailForm;
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
@@ -175,97 +179,121 @@ export default function LoginPage() {
               </div>
             ) : (
               <>
-                <form onSubmit={handleEmailAuth} className="space-y-3">
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
+                {isInTelegram && (
+                  <div className="space-y-4">
+                    <div className="text-center space-y-1">
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        You&apos;re in Telegram
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Tap the button below to sign in instantly
+                      </p>
+                    </div>
+                    <TelegramAuthButton />
+                    <button
+                      onClick={() => setShowEmailForm(!showEmailForm)}
+                      className="w-full text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 text-center py-2"
+                    >
+                      {showEmailForm ? "Hide email sign in ↑" : "Sign in with email instead ↓"}
+                    </button>
                   </div>
-                  <div>
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    {mode === "signin" ? "Sign In" : "Sign Up"}
-                  </Button>
-                </form>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-slate-200 dark:border-slate-700" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">
-                      or
-                    </span>
-                  </div>
-                </div>
-
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleMagicLink}
-                  disabled={loading}
-                >
-                  <Mail className="w-4 h-4 mr-2" />
-                  Send Magic Link
-                </Button>
-
-                <TelegramAuthButton />
-
-                {isDemoEnabled && (
-                  <Button
-                    variant="secondary"
-                    className="w-full bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900 dark:text-sky-200"
-                    onClick={handleDemoMode}
-                    disabled={loading}
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Try Demo Mode
-                  </Button>
                 )}
 
-                <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-                  {mode === "signin" ? (
-                    <>
-                      Don&apos;t have an account?{" "}
-                      <button
-                        onClick={() => setMode("signup")}
-                        className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+                {showEmail && (
+                  <>
+                    {!isInTelegram && <TelegramAuthButton />}
+
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-slate-200 dark:border-slate-700" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">
+                          or
+                        </span>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleEmailAuth} className="space-y-3">
+                      <div>
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="you@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={loading}
                       >
-                        Sign up
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      Already have an account?{" "}
-                      <button
-                        onClick={() => setMode("signin")}
-                        className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+                        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        {mode === "signin" ? "Sign In" : "Sign Up"}
+                      </Button>
+                    </form>
+
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleMagicLink}
+                      disabled={loading}
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Send Magic Link
+                    </Button>
+
+                    {isDemoEnabled && (
+                      <Button
+                        variant="secondary"
+                        className="w-full bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900 dark:text-sky-200"
+                        onClick={handleDemoMode}
+                        disabled={loading}
                       >
-                        Sign in
-                      </button>
-                    </>
-                  )}
-                </p>
+                        <Play className="w-4 h-4 mr-2" />
+                        Try Demo Mode
+                      </Button>
+                    )}
+
+                    <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+                      {mode === "signin" ? (
+                        <>
+                          Don&apos;t have an account?{" "}
+                          <button
+                            onClick={() => setMode("signup")}
+                            className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+                          >
+                            Sign up
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          Already have an account?{" "}
+                          <button
+                            onClick={() => setMode("signin")}
+                            className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+                          >
+                            Sign in
+                          </button>
+                        </>
+                      )}
+                    </p>
+                  </>
+                )}
               </>
             )}
           </CardContent>
