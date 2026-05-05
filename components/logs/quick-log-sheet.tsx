@@ -13,7 +13,7 @@ import {
 import { queueOfflineLog } from "@/lib/db/offline-queue";
 import { getTodayInTimezone } from "@/lib/utils";
 import { useWeightUnit } from "@/lib/hooks/use-weight-unit";
-import { useInvalidateAppData } from "@/lib/hooks/use-birds";
+import { useInvalidateAppData } from "@/lib/hooks/use-dashboard-data";
 import { toast } from "@/lib/toast";
 import { Bird } from "lucide-react";
 import {

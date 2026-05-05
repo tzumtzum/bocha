@@ -10,12 +10,21 @@ import { DailyStatusSummary } from "@/components/birds/daily-status-summary";
 import { EmptyBirdState } from "@/components/birds/empty-state";
 import { StreakCounter } from "@/components/birds/streak-counter";
 import { ReminderBanner } from "@/components/layout/reminder-banner";
-import { CombinedWeightChart } from "@/components/charts/combined-weight-chart";
-import { QuickLogSheet } from "@/components/logs/quick-log-sheet";
 import { Plus, Crown, Sparkles, Feather } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const CombinedWeightChart = dynamic(
+  () => import("@/components/charts/combined-weight-chart").then((m) => m.CombinedWeightChart),
+  { ssr: false, loading: () => <Skeleton className="h-48 w-full" /> }
+);
+
+const QuickLogSheet = dynamic(
+  () => import("@/components/logs/quick-log-sheet").then((m) => m.QuickLogSheet),
+  { ssr: false }
+);
 import { getTodayInTimezone, calculateStreak } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { useBirds, useLogs, useProfile, useUpgradeToPro } from "@/lib/hooks/use-birds";
+import { useDashboardData, useProfile, useUpgradeToPro } from "@/lib/hooks/use-dashboard-data";
 
 interface BirdWithLogs {
   id: string;
@@ -36,36 +45,35 @@ export default function DashboardPage() {
   const [logSheetBirdId, setLogSheetBirdId] = useState<string | null>(null);
 
   const {
-    data: birdsData,
-    isLoading: birdsLoading,
-    error: birdsError,
-  } = useBirds();
-  const { data: logsData, isLoading: logsLoading } = useLogs();
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    error: dashboardError,
+  } = useDashboardData();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const upgrade = useUpgradeToPro();
 
   // Redirect unauthenticated users
   useEffect(() => {
-    if (birdsError && (birdsError as Error).message === "Not authenticated") {
+    if (dashboardError && (dashboardError as Error).message === "Not authenticated") {
       router.push("/login");
     }
-  }, [birdsError, router]);
+  }, [dashboardError, router]);
 
   // Redirect to onboarding if no active birds (and data is loaded)
   useEffect(() => {
-    if (!birdsLoading && birdsData && birdsData.length === 0) {
+    if (!dashboardLoading && dashboardData?.birds && dashboardData.birds.length === 0) {
       router.push("/onboarding");
     }
-  }, [birdsLoading, birdsData, router]);
+  }, [dashboardLoading, dashboardData, router]);
 
-  const isLoading = birdsLoading || logsLoading || profileLoading;
+  const isLoading = dashboardLoading || profileLoading;
   const isPro = profile?.is_pro ?? false;
-  const birdCount = birdsData?.length ?? 0;
+  const birdCount = dashboardData?.birds?.length ?? 0;
 
   // Merge logs into birds for display
-  const birds: BirdWithLogs[] = (birdsData ?? []).map((bird: Record<string, unknown>) => {
+  const birds: BirdWithLogs[] = (dashboardData?.birds ?? []).map((bird: Record<string, unknown>) => {
     const birdLogs =
-      (logsData ?? [])
+      (dashboardData?.logs ?? [])
         .filter((log: Record<string, unknown>) => log.bird_id === bird.id)
         .map((log: Record<string, unknown>) => ({ log_date: String(log.log_date), weight: log.weight as number | null })) ?? [];
     return {

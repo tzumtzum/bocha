@@ -11,8 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { WeightChart } from "@/components/charts/weight-chart";
 import { WeightAlert } from "@/components/birds/weight-alert";
+import dynamic from "next/dynamic";
+
+const WeightChart = dynamic(
+  () => import("@/components/charts/weight-chart").then((m) => m.WeightChart),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> }
+);
 import { SafeImage } from "@/components/ui/safe-image";
 import { formatWeight, formatDate, formatTime } from "@/lib/utils";
 import { useWeightUnit } from "@/lib/hooks/use-weight-unit";

@@ -6,7 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatWeight } from "@/lib/utils";
 import { useWeightUnit } from "@/lib/hooks/use-weight-unit";
-import { MiniSparkline } from "@/components/charts/mini-sparkline";
+import dynamic from "next/dynamic";
+
+const MiniSparkline = dynamic(
+  () => import("@/components/charts/mini-sparkline").then((m) => m.MiniSparkline),
+  { ssr: false }
+);
 
 interface BirdCardProps {
   bird: {
