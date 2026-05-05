@@ -171,7 +171,8 @@ export default function OnboardingPage() {
         .single();
 
       if (flockError || !newFlock) {
-        toast("Failed to create flock. Please try again.", { type: "error" });
+        console.error("[onboarding] flock creation failed:", flockError);
+        toast(`Failed to create flock: ${flockError?.message ?? "unknown error"}`, { type: "error" });
         setLoading(false);
         return;
       }
