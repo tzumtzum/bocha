@@ -151,8 +151,19 @@ export default function OnboardingPage() {
       return;
     }
 
+    // Get user's default flock
+    const { data: flockData } = await supabase
+      .from("flock_members")
+      .select("flock_id")
+      .eq("user_id", user.id)
+      .eq("role", "owner")
+      .single();
+
+    const flockId = flockData?.flock_id;
+
     const { error } = await supabase.from("birds").insert({
       user_id: user.id,
+      flock_id: flockId,
       name: data.name,
       species: data.species,
       date_of_birth: data.dateOfBirth || null,

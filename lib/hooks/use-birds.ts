@@ -17,10 +17,21 @@ export function useBirds() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Get user's flock memberships
+      const { data: memberships, error: membershipError } = await supabase
+        .from("flock_members")
+        .select("flock_id")
+        .eq("user_id", user.id);
+
+      if (membershipError) throw membershipError;
+
+      const flockIds = memberships?.map((m: { flock_id: string }) => m.flock_id) ?? [];
+      if (flockIds.length === 0) return [];
+
       const { data, error } = await supabase
         .from("birds")
         .select("id, name, species, current_weight, target_weight, avatar_color, status, timezone, sort_order")
-        .eq("user_id", user.id)
+        .in("flock_id", flockIds)
         .eq("status", "active")
         .order("sort_order", { ascending: true });
 
@@ -41,10 +52,32 @@ export function useLogs() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Get user's flock memberships
+      const { data: memberships, error: membershipError } = await supabase
+        .from("flock_members")
+        .select("flock_id")
+        .eq("user_id", user.id);
+
+      if (membershipError) throw membershipError;
+
+      const flockIds = memberships?.map((m: { flock_id: string }) => m.flock_id) ?? [];
+      if (flockIds.length === 0) return [];
+
+      // Get birds in those flocks, then their logs
+      const { data: birdsData, error: birdsError } = await supabase
+        .from("birds")
+        .select("id")
+        .in("flock_id", flockIds);
+
+      if (birdsError) throw birdsError;
+
+      const birdIds = birdsData?.map((b: { id: string }) => b.id) ?? [];
+      if (birdIds.length === 0) return [];
+
       const { data, error } = await supabase
         .from("daily_logs")
         .select("bird_id, log_date, weight, logged_at")
-        .eq("user_id", user.id)
+        .in("bird_id", birdIds)
         .order("log_date", { ascending: false });
 
       if (error) throw error;

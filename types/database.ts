@@ -102,10 +102,92 @@ export interface Database {
           created_at?: string;
         };
       };
+      flocks: {
+        Row: {
+          id: string;
+          name: string;
+          owner_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name?: string;
+          owner_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          owner_id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      flock_members: {
+        Row: {
+          id: string;
+          flock_id: string;
+          user_id: string;
+          role: string;
+          joined_at: string;
+        };
+        Insert: {
+          id?: string;
+          flock_id: string;
+          user_id: string;
+          role: string;
+          joined_at?: string;
+        };
+        Update: {
+          id?: string;
+          flock_id?: string;
+          user_id?: string;
+          role?: string;
+          joined_at?: string;
+        };
+      };
+      flock_invites: {
+        Row: {
+          id: string;
+          flock_id: string;
+          token: string;
+          role: string;
+          created_by: string;
+          created_at: string;
+          expires_at: string;
+          used_by: string | null;
+          used_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          flock_id: string;
+          token: string;
+          role: string;
+          created_by: string;
+          created_at?: string;
+          expires_at: string;
+          used_by?: string | null;
+          used_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          flock_id?: string;
+          token?: string;
+          role?: string;
+          created_by?: string;
+          created_at?: string;
+          expires_at?: string;
+          used_by?: string | null;
+          used_at?: string | null;
+        };
+      };
       birds: {
         Row: {
           id: string;
           user_id: string;
+          flock_id: string;
           name: string;
           species: string;
           date_of_birth: string | null;
@@ -123,6 +205,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id: string;
+          flock_id?: string;
           name: string;
           species: string;
           date_of_birth?: string | null;
@@ -140,6 +223,7 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string;
+          flock_id?: string;
           name?: string;
           species?: string;
           date_of_birth?: string | null;

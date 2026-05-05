@@ -106,12 +106,20 @@ function FullLogForm() {
         const user = data.user;
         if (!user) return;
         supabase
-          .from("birds")
-          .select("id, name")
+          .from("flock_members")
+          .select("flock_id")
           .eq("user_id", user.id)
-          .eq("status", "active")
-          .then(({ data: birdsData }: { data: { id: string; name: string }[] | null }) => {
-            if (birdsData) setUserBirds(birdsData);
+          .then(({ data: memberships }: { data: { flock_id: string }[] | null }) => {
+            const flockIds = memberships?.map((m) => m.flock_id) ?? [];
+            if (flockIds.length === 0) return;
+            supabase
+              .from("birds")
+              .select("id, name")
+              .in("flock_id", flockIds)
+              .eq("status", "active")
+              .then(({ data: birdsData }: { data: { id: string; name: string }[] | null }) => {
+                if (birdsData) setUserBirds(birdsData);
+              });
           });
       });
     }

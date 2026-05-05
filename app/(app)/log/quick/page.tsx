@@ -54,18 +54,27 @@ function QuickLogForm() {
           .single();
         if (data) setSingleBird(data as unknown as BirdData);
       } else {
-        const { data } = await supabase
-          .from("birds")
-          .select("id, name, species, target_weight, current_weight, avatar_color")
-          .eq("user_id", user.id)
-          .eq("status", "active")
-          .order("sort_order", { ascending: true });
-        if (data) {
-          const typed = data as unknown as BirdData[];
-          if (typed.length === 1) {
-            setSingleBird(typed[0]);
-          } else {
-            setMultiBirds(typed);
+        const { data: memberships } = await supabase
+          .from("flock_members")
+          .select("flock_id")
+          .eq("user_id", user.id);
+
+        const flockIds = memberships?.map((m: { flock_id: string }) => m.flock_id) ?? [];
+
+        if (flockIds.length > 0) {
+          const { data } = await supabase
+            .from("birds")
+            .select("id, name, species, target_weight, current_weight, avatar_color")
+            .in("flock_id", flockIds)
+            .eq("status", "active")
+            .order("sort_order", { ascending: true });
+          if (data) {
+            const typed = data as unknown as BirdData[];
+            if (typed.length === 1) {
+              setSingleBird(typed[0]);
+            } else {
+              setMultiBirds(typed);
+            }
           }
         }
       }

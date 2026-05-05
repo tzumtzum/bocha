@@ -17,6 +17,9 @@ const LS_KEYS = {
   logs: "bobo_demo_logs",
   profile: "bobo_demo_profile",
   photos: "bobo_demo_photos",
+  flocks: "bobo_demo_flocks",
+  flock_members: "bobo_demo_flock_members",
+  flock_invites: "bobo_demo_flock_invites",
 };
 
 function generateId() {
@@ -40,11 +43,34 @@ function setItem(key: string, value: unknown) {
 function seedData() {
   const existingBirds = getItem<Record<string, unknown>[]>(LS_KEYS.birds, []);
   if (existingBirds.length === 0) {
+    const flockId = generateId();
     const boboId = generateId();
+
+    const flocks = [
+      {
+        id: flockId,
+        name: "My Flock",
+        owner_id: DEMO_USER.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+
+    const flockMembers = [
+      {
+        id: generateId(),
+        flock_id: flockId,
+        user_id: DEMO_USER.id,
+        role: "owner",
+        joined_at: new Date().toISOString(),
+      },
+    ];
+
     const birds = [
       {
         id: boboId,
         user_id: DEMO_USER.id,
+        flock_id: flockId,
         name: "Bobo",
         species: "Cockatiel",
         date_of_birth: "2023-01-15",
@@ -90,6 +116,8 @@ function seedData() {
       });
     }
 
+    setItem(LS_KEYS.flocks, flocks);
+    setItem(LS_KEYS.flock_members, flockMembers);
     setItem(LS_KEYS.birds, birds);
     setItem(LS_KEYS.logs, logs);
     setItem(LS_KEYS.profile, {
@@ -106,7 +134,7 @@ function seedData() {
 }
 
 interface QueryBuilder {
-  filters?: { column: string; value: unknown }[];
+  filters?: { column: string; value: unknown; op?: "eq" | "in" }[];
   order?: { column: string; ascending: boolean };
   limit?: number;
 }
@@ -116,7 +144,11 @@ function buildQuery(data: Record<string, unknown>[], query: QueryBuilder): Recor
 
   if (query.filters) {
     for (const f of query.filters) {
-      result = result.filter((row) => row[f.column] === f.value);
+      if (f.op === "in" && Array.isArray(f.value)) {
+        result = result.filter((row) => (f.value as unknown[]).includes(row[f.column]));
+      } else {
+        result = result.filter((row) => row[f.column] === f.value);
+      }
     }
   }
 
@@ -152,6 +184,9 @@ class MockPostgrestBuilder {
       const profile = getItem<Record<string, unknown> | null>(LS_KEYS.profile, null);
       this.data = profile ? [profile] : [];
     }
+    if (this.table === "flocks") this.data = getItem(LS_KEYS.flocks, []);
+    if (this.table === "flock_members") this.data = getItem(LS_KEYS.flock_members, []);
+    if (this.table === "flock_invites") this.data = getItem(LS_KEYS.flock_invites, []);
     if (this.table === "species") {
       this.data = [
         "Budgerigar","Cockatiel","African Grey","Macaw","Conure","Lovebird",
@@ -164,7 +199,13 @@ class MockPostgrestBuilder {
 
   eq(column: string, value: unknown) {
     if (!this.query.filters) this.query.filters = [];
-    this.query.filters.push({ column, value });
+    this.query.filters.push({ column, value, op: "eq" });
+    return this;
+  }
+
+  in(column: string, values: unknown[]) {
+    if (!this.query.filters) this.query.filters = [];
+    this.query.filters.push({ column, value: values, op: "in" });
     return this;
   }
 
@@ -270,6 +311,14 @@ class MockSupabaseClient {
           }
           setItem(LS_KEYS.logs, logs);
         }
+        if (table === "flock_invites") {
+          const invites = getItem<Record<string, unknown>[]>(LS_KEYS.flock_invites, []);
+          for (const v of arr) {
+            const row = { ...(v as object), id: (v as Record<string, unknown>).id || generateId(), created_at: new Date().toISOString() };
+            invites.push(row);
+          }
+          setItem(LS_KEYS.flock_invites, invites);
+        }
         return Promise.resolve({ data: arr, error: null });
       },
       update: (values: Record<string, unknown>) => ({
@@ -289,6 +338,12 @@ class MockSupabaseClient {
             const idx = logs.findIndex((l) => l[column] === value);
             if (idx >= 0) logs[idx] = { ...logs[idx], ...values, updated_at: new Date().toISOString() };
             setItem(LS_KEYS.logs, logs);
+          }
+          if (table === "flock_invites") {
+            const invites = getItem<Record<string, unknown>[]>(LS_KEYS.flock_invites, []);
+            const idx = invites.findIndex((inv) => inv[column] === value);
+            if (idx >= 0) invites[idx] = { ...invites[idx], ...values, updated_at: new Date().toISOString() };
+            setItem(LS_KEYS.flock_invites, invites);
           }
           return Promise.resolve({ data: null, error: null });
         },
