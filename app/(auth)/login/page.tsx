@@ -218,6 +218,23 @@ export default function LoginPage() {
                   Back to sign in
                 </Button>
               </div>
+            ) : resetSent ? (
+              <div className="text-center py-4">
+                <Mail className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+                <p className="text-slate-700 dark:text-slate-300 font-medium">
+                  Reset email sent!
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Check your email to set a new password.
+                </p>
+                <Button
+                  variant="ghost"
+                  className="mt-4"
+                  onClick={() => setResetSent(false)}
+                >
+                  Back to sign in
+                </Button>
+              </div>
             ) : (
               <>
                 {isInTelegram && (

@@ -23,7 +23,7 @@ export function SetPasswordPrompt() {
     const dismissed = localStorage.getItem(PROMPT_DISMISSED_KEY);
     if (dismissed) return;
 
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { created_at?: string } | null } }) => {
       const user = data.user;
       if (!user?.created_at) return;
       const createdAt = new Date(user.created_at).getTime();
