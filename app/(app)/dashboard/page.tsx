@@ -60,12 +60,7 @@ export default function DashboardPage() {
     }
   }, [dashboardError, router]);
 
-  // Redirect to onboarding if no active birds (and data is loaded)
-  useEffect(() => {
-    if (!dashboardLoading && dashboardData?.birds && dashboardData.birds.length === 0) {
-      router.push("/onboarding");
-    }
-  }, [dashboardLoading, dashboardData, router]);
+  // No forced redirect — show welcome screen with Create Flock / Join Flock options
 
   const isLoading = dashboardLoading || profileLoading;
   const isPro = profile?.is_pro ?? false;
