@@ -10,6 +10,7 @@ import { DailyStatusSummary } from "@/components/birds/daily-status-summary";
 import { EmptyBirdState } from "@/components/birds/empty-state";
 import { StreakCounter } from "@/components/birds/streak-counter";
 import { ReminderBanner } from "@/components/layout/reminder-banner";
+import { SetPasswordPrompt } from "@/components/auth/set-password-prompt";
 import { Plus, Crown, Sparkles, Feather } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -149,6 +150,9 @@ export default function DashboardPage() {
 
       {/* Reminder Banner */}
       <ReminderBanner />
+
+      {/* Set Password Prompt for new magic-link users */}
+      <SetPasswordPrompt />
 
       {/* Daily Status Summary */}
       <DailyStatusSummary

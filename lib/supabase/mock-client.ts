@@ -9,6 +9,7 @@ const DEMO_USER = {
   email: "demo@bobo.app",
   aud: "authenticated",
   role: "authenticated",
+  created_at: "2023-01-01T00:00:00.000Z",
 };
 
 const LS_KEYS = {
@@ -263,6 +264,10 @@ class MockSupabaseClient {
       return { data: { subscription: { unsubscribe: () => {} } } };
     },
     exchangeCodeForSession: () => Promise.resolve({ data: {}, error: null }),
+    updateUser: (attrs: Record<string, unknown>) => {
+      Object.assign(DEMO_USER, attrs);
+      return Promise.resolve({ data: { user: DEMO_USER }, error: null });
+    },
   };
 
   storage = {

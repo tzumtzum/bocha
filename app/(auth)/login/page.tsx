@@ -20,6 +20,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [magicLinkCooldown, setMagicLinkCooldown] = useState(0);
 
   const router = useRouter();
   const supabase = createClient();
@@ -33,6 +35,15 @@ export default function LoginPage() {
       }
     });
   }, [router, supabase]);
+
+  // Countdown timer for magic link cooldown
+  useEffect(() => {
+    if (magicLinkCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setMagicLinkCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [magicLinkCooldown]);
 
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -85,6 +96,36 @@ export default function LoginPage() {
       });
       if (error) throw error;
       setMagicLinkSent(true);
+      setMagicLinkCooldown(60);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "An error occurred";
+      if (msg.toLowerCase().includes("rate limit")) {
+        setError(
+          "Too many emails sent. Please wait a minute, check your existing email for the link, or use Forgot Password to set a password instead."
+        );
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!email) {
+      setError("Please enter your email above first");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setResetSent(false);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/api/auth/callback`,
+      });
+      if (error) throw error;
+      setResetSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -167,7 +208,7 @@ export default function LoginPage() {
                   Magic link sent!
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Check your email to sign in.
+                  Check your email to sign in. The link expires in about an hour — do not request another one.
                 </p>
                 <Button
                   variant="ghost"
@@ -227,7 +268,18 @@ export default function LoginPage() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="password">Password</Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="password">Password</Label>
+                          {mode === "signin" && (
+                            <button
+                              type="button"
+                              onClick={handleResetPassword}
+                              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+                            >
+                              Forgot password?
+                            </button>
+                          )}
+                        </div>
                         <Input
                           id="password"
                           type="password"
@@ -247,15 +299,22 @@ export default function LoginPage() {
                       </Button>
                     </form>
 
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={handleMagicLink}
-                      disabled={loading}
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Send Magic Link
-                    </Button>
+                    <div className="space-y-1">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleMagicLink}
+                        disabled={loading || magicLinkCooldown > 0}
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        {magicLinkCooldown > 0
+                          ? `Wait ${magicLinkCooldown}s`
+                          : "Send Magic Link"}
+                      </Button>
+                      <p className="text-xs text-center text-slate-400 dark:text-slate-500">
+                        Links expire in ~1 hour. If you already requested one, check your email.
+                      </p>
+                    </div>
 
                     {isDemoEnabled && (
                       <Button
