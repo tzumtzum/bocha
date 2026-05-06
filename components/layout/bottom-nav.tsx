@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Settings, PlusCircle } from "lucide-react";
+import { Home, Settings, PlusCircle, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function BottomNav({
@@ -16,6 +16,7 @@ export function BottomNav({
 
   const navItems = [
     { href: "/dashboard", label: "Home", icon: Home },
+    { href: "/flock", label: "Flock", icon: Users },
     ...(hasBirds
       ? [{ href: "/log/quick", label: "Log", icon: PlusCircle }]
       : []),
@@ -29,7 +30,7 @@ export function BottomNav({
     >
       <div className="max-w-md mx-auto flex items-center justify-around h-16">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
