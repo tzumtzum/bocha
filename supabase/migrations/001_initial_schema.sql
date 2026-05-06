@@ -278,13 +278,31 @@ CREATE TABLE IF NOT EXISTS flocks (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Security definer helpers to avoid RLS recursion
+CREATE OR REPLACE FUNCTION user_belongs_to_flock(p_flock_id UUID, p_user_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM flock_members WHERE flock_id = p_flock_id AND user_id = p_user_id
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION user_is_flock_admin(p_flock_id UUID, p_user_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM flock_members
+    WHERE flock_id = p_flock_id AND user_id = p_user_id AND role IN ('owner', 'admin')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 ALTER TABLE flocks ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view flocks they belong to"
   ON flocks FOR SELECT
-  USING (EXISTS (
-    SELECT 1 FROM flock_members fm WHERE fm.flock_id = flocks.id AND fm.user_id = auth.uid()
-  ));
+  USING (user_belongs_to_flock(id, auth.uid()));
 
 CREATE POLICY "Owners can create flocks"
   ON flocks FOR INSERT
@@ -315,19 +333,12 @@ ALTER TABLE flock_members ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view members of their flocks"
   ON flock_members FOR SELECT
-  USING (EXISTS (
-    SELECT 1 FROM flock_members fm WHERE fm.flock_id = flock_members.flock_id AND fm.user_id = auth.uid()
-  ));
+  USING (user_belongs_to_flock(flock_id, auth.uid()));
 
 CREATE POLICY "Owners and admins can add members"
   ON flock_members FOR INSERT
   TO authenticated
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM flock_members fm
-    WHERE fm.flock_id = flock_members.flock_id
-    AND fm.user_id = auth.uid()
-    AND fm.role IN ('owner', 'admin')
-  ));
+  WITH CHECK (user_is_flock_admin(flock_id, auth.uid()));
 
 CREATE INDEX idx_flock_members_flock_id ON flock_members(flock_id);
 CREATE INDEX idx_flock_members_user_id ON flock_members(user_id);
@@ -351,19 +362,12 @@ ALTER TABLE flock_invites ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view invites for their flocks"
   ON flock_invites FOR SELECT
-  USING (EXISTS (
-    SELECT 1 FROM flock_members fm WHERE fm.flock_id = flock_invites.flock_id AND fm.user_id = auth.uid()
-  ));
+  USING (user_belongs_to_flock(flock_id, auth.uid()));
 
 CREATE POLICY "Owners and admins can create invites"
   ON flock_invites FOR INSERT
   TO authenticated
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM flock_members fm
-    WHERE fm.flock_id = flock_invites.flock_id
-    AND fm.user_id = auth.uid()
-    AND fm.role IN ('owner', 'admin')
-  ));
+  WITH CHECK (user_is_flock_admin(flock_id, auth.uid()));
 
 CREATE INDEX idx_flock_invites_token ON flock_invites(token);
 CREATE INDEX idx_flock_invites_flock_id ON flock_invites(flock_id);
