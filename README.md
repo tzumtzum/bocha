@@ -13,6 +13,7 @@ A mobile-first PWA and **Telegram Mini App** for bird owners to log daily weight
 - **Dark Mode** — System-aware theme switching
 - **Telegram Mini App** — Native Telegram WebApp integration with auto-authentication
 - **Pro Badge** — Golden feather badge for Pro accounts
+- **Flock Management** — Create or join a flock, invite family/vets via links, manage members with owner/admin/member roles
 - **CSV Import/Export** — Backup and restore your data
 - **Photo Upload** — Attach photos to health logs
 
@@ -73,7 +74,13 @@ supabase/migrations/001_initial_schema.sql
 # 2. Telegram auth table
 supabase/migrations/002_telegram_auth.sql
 
-# 3. Add avatar_url to profiles (if not already present)
+# 3. Fix flock RLS policies
+supabase/migrations/002_fix_flock_rls.sql
+
+# 4. Fix flock RLS recursion
+supabase/migrations/003_fix_flock_recursion.sql
+
+# 5. Add avatar_url to profiles (if not already present)
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ```
 
@@ -149,6 +156,9 @@ public/
 | `reminders` | User-configurable reminders |
 | `species` | Lookup table (seeded) |
 | `telegram_auth` | Random passwords for Telegram-authenticated users |
+| `flocks` | Flock/group records |
+| `flock_members` | Many-to-many: users ↔ flocks with role (owner/admin/member) |
+| `flock_invites` | Single-use invite tokens with 24h expiry |
 
 All tables have RLS enabled with user isolation policies.
 

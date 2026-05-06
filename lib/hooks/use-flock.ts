@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 
-const FLOCK_KEY = "flock";
+export const FLOCK_KEY = "flock";
 
 export interface FlockMember {
   id: string;

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { FLOCK_KEY } from "@/lib/hooks/use-flock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +15,7 @@ import Link from "next/link";
 
 export default function CreateFlockPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const supabase = createClient();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -61,6 +64,7 @@ export default function CreateFlockPage() {
       }
 
       toast("Flock created!", { type: "success" });
+      await queryClient.invalidateQueries({ queryKey: [FLOCK_KEY] });
       router.push("/flock");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Something went wrong", { type: "error" });

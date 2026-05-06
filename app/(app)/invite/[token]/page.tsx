@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { FLOCK_KEY } from "@/lib/hooks/use-flock";
+import { DASHBOARD_KEY } from "@/lib/hooks/use-dashboard-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/lib/toast";
@@ -12,6 +15,7 @@ import Link from "next/link";
 export default function InvitePage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const supabase = createClient();
   const token = params.token as string;
 
@@ -76,6 +80,8 @@ export default function InvitePage() {
       }
 
       toast("You've joined the flock!", { type: "success" });
+      await queryClient.invalidateQueries({ queryKey: [FLOCK_KEY] });
+      await queryClient.invalidateQueries({ queryKey: [DASHBOARD_KEY] });
       router.push("/dashboard");
     } catch {
       toast("Something went wrong. Please try again.", { type: "error" });

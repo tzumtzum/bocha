@@ -24,6 +24,8 @@ app/
   (app)/            # Protected pages (dashboard, birds, log, settings)
     birds/[id]/     # Bird detail with weight chart, edit dialog, archive, timestamps
     dashboard/      # Main flock view with combined chart, streak counter, bird cards (TanStack Query)
+    flock/          # Flock management: members list, invite generation, role-based UI
+    flock/create/   # Standalone flock creation page
     log/quick/      # Quick weight log — single or multi-bird compact layout
     log/full/       # Full observation log with photo upload
     settings/       # Preferences, export/import, reorder birds, archived birds, danger zone
@@ -36,7 +38,10 @@ app/
     error.tsx       # Error boundary for auth routes
   api/auth/callback/# OAuth code exchange handler
   api/auth/telegram/# Telegram WebApp initData validation (HMAC-SHA256)
+  api/flock/invite/ # POST to create flock invite links
+  api/flock/invite/accept/ # POST to accept invite and join flock
   api/health/       # Health check endpoint (DB connectivity)
+  invite/[token]/   # Public invite acceptance page (validates token, shows flock info, joins on click)
   layout.tsx        # Root layout with Inter font, Providers, PWA manifest, Sonner Toaster, ErrorBoundary
   page.tsx          # Root redirect (login → dashboard)
   globals.css       # Tailwind directives + CSS variables (emerald primary)
@@ -65,6 +70,8 @@ lib/
   hooks/
     use-weight-unit.ts # Reads profile weight_unit preference
     use-birds.ts    # TanStack Query hooks: useBirds, useLogs, useProfile, useUpgradeToPro
+    use-flock.ts    # TanStack Query hooks: useFlockData, useCreateInvite
+    use-dashboard-data.ts # useDashboardData, useProfile, useInvalidateAppData (cache invalidation helpers)
   toast.ts          # Toast + confirmDialog utility (sonner + Telegram native fallback)
   utils.ts          # cn(), formatWeight(), formatDate(), formatTime(), calculateStreak(), etc.
   utils/photo.ts    # Demo photo URL helpers
@@ -242,8 +249,12 @@ Run `supabase/migrations/001_initial_schema.sql` in the Supabase SQL Editor. Thi
 - [x] **Delete historical logs** — Each log entry has a delete button (trash icon) with a confirmation dialog. Deletes via `daily_logs.delete().eq("id", logId)` and updates local state immediately.
   - *Test*: Go to a bird detail page (`/birds/[id]`), click the trash icon next to a log, confirm deletion. The log should disappear immediately without a page refresh.
 - [x] **Flock sharing** — Share birds with family/vets via invite links. 3 roles (owner/admin/member). 24h expiry single-use invites.
-  - *Test*: Go to Settings → Flock. As owner, click "Generate Invite Link". Copy the link. In a different browser/incognito, open the invite link and click "Join Flock". Return to original user's dashboard — both should see the same birds.
+  - *Pages*: `/flock` (management), `/flock/create` (create new flock), `/invite/[token]` (accept invite).
+  - *Test*: Go to `/flock`. As owner, click "Generate Invite Link". Copy the link. In a different browser/incognito, open the invite link and click "Join Flock". Return to original user's dashboard — both should see the same birds.
   - *API*: `POST /api/flock/invite` (create invite), `POST /api/flock/invite/accept` (join flock).
+  - *Cache invalidation*: After create/join/accept, `invalidateFlock()` and `invalidateDashboard()` are called so the UI updates immediately without stale data.
+- [x] **Dashboard empty state** — New users with no birds see "Create Your Flock" and "Join a Flock" choices instead of being forced to onboarding.
+  - *Test*: Log in as a new user with no birds. Go to `/dashboard`. Tap "Create Your Flock" → `/flock/create`. Or paste an invite link/token to join an existing flock.
 - [x] **Dashboard daily status summary** — Hero card at the top of `/dashboard` showing which birds have been logged today (green check) and which still need logging (prominent CTA). Appears above the combined chart.
   - *Test*: Go to `/dashboard`. If all birds are logged today, see a green "All caught up!" card. If a bird needs logging, see an amber card listing birds with "Log" buttons. Clicking "Log" opens the inline quick log sheet.
 - [x] **Simplify BirdCard actions** — Removed the 3-button grid (View / Quick Log / Full) from each `BirdCard`. The entire card is now tappable to navigate to `/birds/[id]`. A small "+" button appears on birds that haven't been logged today.
@@ -329,8 +340,8 @@ Run `supabase/migrations/001_initial_schema.sql` in the Supabase SQL Editor. Thi
 Every new feature, bug fix, or behavior change must include test coverage. This prevents regressions in demo mode and ensures the mock client stays in sync with real Supabase behavior.
 
 - **Unit tests** (`npm run test:unit`): Add tests for new utilities, hooks, or mock-client behavior.
-  - Current coverage: 74 tests across 8 files (mock client, hooks, API routes, components, utils, offline queue).
-  - Flock-specific tests: `lib/supabase/mock-client.test.ts` (flock/flock_members/flock_invites), `app/api/flock/invite/route.test.ts` (7 tests), `app/api/flock/invite/accept/route.test.ts` (8 tests), `lib/hooks/use-birds.test.tsx` (7 tests).
+  - Current coverage: 86 tests across 11 files (mock client, hooks, API routes, components, utils, offline queue).
+  - Flock-specific tests: `lib/supabase/mock-client.test.ts` (flock/flock_members/flock_invites), `app/api/flock/invite/route.test.ts` (7 tests), `app/api/flock/invite/accept/route.test.ts` (8 tests), `lib/hooks/use-birds.test.tsx` (7 tests), `lib/hooks/use-flock.test.tsx` (3 tests), `app/(app)/flock/page.test.tsx` (4 tests).
 - **E2E tests** (`npm run test:e2e`): Add Playwright steps for new UI flows (e.g., opening a dialog, filling a form, asserting state change).
 - **Mock client parity**: If a feature uses a Supabase method not yet implemented in the mock client (e.g., `.update()` on a new table, `.select()` chaining), extend the mock client **before** or alongside the feature implementation.
 - **Run both suites before committing**: `npm run build && npm run test:unit && npm run test:e2e`.

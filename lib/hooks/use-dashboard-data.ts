@@ -2,8 +2,9 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { FLOCK_KEY } from "./use-flock";
 
-const DASHBOARD_KEY = "dashboard";
+export const DASHBOARD_KEY = "dashboard";
 const PROFILE_KEY = "profile";
 
 interface DashboardData {
@@ -144,9 +145,11 @@ export function useInvalidateAppData() {
   return {
     invalidateDashboard: () => queryClient.invalidateQueries({ queryKey: [DASHBOARD_KEY] }),
     invalidateProfile: () => queryClient.invalidateQueries({ queryKey: [PROFILE_KEY] }),
+    invalidateFlock: () => queryClient.invalidateQueries({ queryKey: [FLOCK_KEY] }),
     invalidateAll: () => {
       queryClient.invalidateQueries({ queryKey: [DASHBOARD_KEY] });
       queryClient.invalidateQueries({ queryKey: [PROFILE_KEY] });
+      queryClient.invalidateQueries({ queryKey: [FLOCK_KEY] });
     },
   };
 }
