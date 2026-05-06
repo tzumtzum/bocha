@@ -24,6 +24,13 @@ export default function LoginPage() {
   const [magicLinkCooldown, setMagicLinkCooldown] = useState(0);
 
   const router = useRouter();
+
+  function switchMode(newMode: "signin" | "signup") {
+    setMode(newMode);
+    setError(null);
+    setMagicLinkSent(false);
+    setResetSent(false);
+  }
   const supabase = createClient();
   const isInTelegram = useIsInTelegram();
 
@@ -72,7 +79,8 @@ export default function LoginPage() {
         setLoading(false);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const msg = err instanceof Error ? err.message : "An error occurred";
+      setError(msg.toLowerCase().includes("rate limit") ? "Too many emails sent. Please wait a minute and try again." : msg);
     } finally {
       setLoading(false);
     }
@@ -127,7 +135,8 @@ export default function LoginPage() {
       if (error) throw error;
       setResetSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const msg = err instanceof Error ? err.message : "An error occurred";
+      setError(msg.toLowerCase().includes("rate limit") ? "Too many emails sent. Please wait a minute and try again." : msg);
     } finally {
       setLoading(false);
     }
@@ -213,7 +222,10 @@ export default function LoginPage() {
                 <Button
                   variant="ghost"
                   className="mt-4"
-                  onClick={() => setMagicLinkSent(false)}
+                  onClick={() => {
+                    setMagicLinkSent(false);
+                    setError(null);
+                  }}
                 >
                   Back to sign in
                 </Button>
@@ -230,7 +242,10 @@ export default function LoginPage() {
                 <Button
                   variant="ghost"
                   className="mt-4"
-                  onClick={() => setResetSent(false)}
+                  onClick={() => {
+                    setResetSent(false);
+                    setError(null);
+                  }}
                 >
                   Back to sign in
                 </Button>
@@ -350,7 +365,7 @@ export default function LoginPage() {
                         <>
                           Don&apos;t have an account?{" "}
                           <button
-                            onClick={() => setMode("signup")}
+                            onClick={() => switchMode("signup")}
                             className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
                           >
                             Sign up
@@ -360,7 +375,7 @@ export default function LoginPage() {
                         <>
                           Already have an account?{" "}
                           <button
-                            onClick={() => setMode("signin")}
+                            onClick={() => switchMode("signin")}
                             className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
                           >
                             Sign in
