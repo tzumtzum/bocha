@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Loader2,
   Link2,
+  Bird,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -92,7 +93,7 @@ export default function FlockPage() {
             </div>
             <div className="space-y-2">
               <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700">
-                <Link href="/onboarding">
+                <Link href="/flock/create">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Flock
                 </Link>
@@ -156,6 +157,14 @@ export default function FlockPage() {
           ))}
         </CardContent>
       </Card>
+
+      {/* Add Bird */}
+      <Button asChild variant="outline" className="w-full">
+        <Link href="/onboarding">
+          <Bird className="w-4 h-4 mr-2" />
+          Add Bird to Flock
+        </Link>
+      </Button>
 
       {/* Invite */}
       {canInvite && (

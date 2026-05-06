@@ -48,7 +48,7 @@ export function EmptyBirdState() {
 
       <div className="w-full max-w-[280px] space-y-3">
         <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700">
-          <Link href="/onboarding">
+          <Link href="/flock/create">
             <Plus className="w-4 h-4 mr-2" />
             Create Your Flock
           </Link>
