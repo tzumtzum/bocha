@@ -9,32 +9,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bird, Loader2, Mail, Play } from "lucide-react";
+import { Bird, Loader2, Play } from "lucide-react";
 import { TelegramAuthButton, useIsInTelegram } from "@/components/auth/telegram-auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-  const [magicLinkCooldown, setMagicLinkCooldown] = useState(0);
 
   const router = useRouter();
 
   function switchMode(newMode: "signin" | "signup") {
     setMode(newMode);
     setError(null);
-    setMagicLinkSent(false);
     setResetSent(false);
   }
   const supabase = createClient();
   const isInTelegram = useIsInTelegram();
 
-  // Redirect in background if already logged in — no spinner blocking the UI
+  // Redirect in background if already logged in
   useEffect(() => {
     supabase.auth.getSession().then(({ data }: { data: { session: unknown } }) => {
       if (data.session) {
@@ -42,15 +39,6 @@ export default function LoginPage() {
       }
     });
   }, [router, supabase]);
-
-  // Countdown timer for magic link cooldown
-  useEffect(() => {
-    if (magicLinkCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setMagicLinkCooldown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [magicLinkCooldown]);
 
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -75,45 +63,12 @@ export default function LoginPage() {
         });
         if (error) throw error;
         setMode("signin");
-        setError("Check your email to confirm your account!");
+        setError("Account created! You can now sign in.");
         setLoading(false);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An error occurred";
-      setError(msg.toLowerCase().includes("rate limit") ? "Too many emails sent. Please wait a minute and try again." : msg);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleMagicLink(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email) {
-      setError("Please enter your email");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-        },
-      });
-      if (error) throw error;
-      setMagicLinkSent(true);
-      setMagicLinkCooldown(60);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "An error occurred";
-      if (msg.toLowerCase().includes("rate limit")) {
-        setError(
-          "Too many emails sent. Please wait a minute, check your existing email for the link, or use Forgot Password to set a password instead."
-        );
-      } else {
-        setError(msg);
-      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -136,7 +91,7 @@ export default function LoginPage() {
       setResetSent(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An error occurred";
-      setError(msg.toLowerCase().includes("rate limit") ? "Too many emails sent. Please wait a minute and try again." : msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -149,7 +104,6 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      // Mock client ignores credentials; real Supabase will reject these dummy values
       const { error } = await supabase.auth.signInWithPassword({
         email: "demo@example.com",
         password: "demo",
@@ -201,7 +155,7 @@ export default function LoginPage() {
             {error && (
               <div
                 className={`text-sm p-3 rounded-lg ${
-                  error.includes("Check your email")
+                  error.includes("Account created")
                     ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
                     : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
                 }`}
@@ -210,29 +164,8 @@ export default function LoginPage() {
               </div>
             )}
 
-            {magicLinkSent ? (
+            {resetSent ? (
               <div className="text-center py-4">
-                <Mail className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                <p className="text-slate-700 dark:text-slate-300 font-medium">
-                  Magic link sent!
-                </p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Check your email to sign in. The link expires in about an hour — do not request another one.
-                </p>
-                <Button
-                  variant="ghost"
-                  className="mt-4"
-                  onClick={() => {
-                    setMagicLinkSent(false);
-                    setError(null);
-                  }}
-                >
-                  Back to sign in
-                </Button>
-              </div>
-            ) : resetSent ? (
-              <div className="text-center py-4">
-                <Mail className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
                 <p className="text-slate-700 dark:text-slate-300 font-medium">
                   Reset email sent!
                 </p>
@@ -330,23 +263,6 @@ export default function LoginPage() {
                         {mode === "signin" ? "Sign In" : "Sign Up"}
                       </Button>
                     </form>
-
-                    <div className="space-y-1">
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleMagicLink}
-                        disabled={loading || magicLinkCooldown > 0}
-                      >
-                        <Mail className="w-4 h-4 mr-2" />
-                        {magicLinkCooldown > 0
-                          ? `Wait ${magicLinkCooldown}s`
-                          : "Send Magic Link"}
-                      </Button>
-                      <p className="text-xs text-center text-slate-400 dark:text-slate-500">
-                        Links expire in ~1 hour. If you already requested one, check your email.
-                      </p>
-                    </div>
 
                     {isDemoEnabled && (
                       <Button
