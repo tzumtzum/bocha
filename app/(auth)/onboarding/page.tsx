@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Slider } from "@/components/ui/slider";
 import { Bird, ChevronRight, Loader2, Sparkles, Weight } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { FLOCK_KEY } from "@/lib/hooks/use-flock";
 
 interface OnboardingData {
   name: string;
@@ -46,6 +48,7 @@ const STORAGE_KEY = "bobo_onboarding_progress";
 export default function OnboardingPage() {
   const router = useRouter();
   const supabase = createClient();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [checkingBirds, setCheckingBirds] = useState(true);
@@ -208,6 +211,7 @@ export default function OnboardingPage() {
     }
 
     localStorage.removeItem(STORAGE_KEY);
+    queryClient.invalidateQueries({ queryKey: [FLOCK_KEY] });
     router.push("/dashboard");
   }
 

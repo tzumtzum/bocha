@@ -31,20 +31,6 @@ CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
 
--- Trigger to create profile on signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, full_name)
-  VALUES (NEW.id, NEW.raw_user_meta_data->>'full_name');
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
 -- ============================================
 -- SPECIES TABLE
 -- ============================================
@@ -86,6 +72,68 @@ INSERT INTO species (name) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- ============================================
+-- FLOCKS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS flocks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE flocks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view flocks they belong to"
+  ON flocks FOR SELECT
+  USING (auth.uid() = owner_id);
+
+CREATE POLICY "Owners can create flocks"
+  ON flocks FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = owner_id);
+
+CREATE POLICY "Owners can update their flocks"
+  ON flocks FOR UPDATE
+  USING (auth.uid() = owner_id);
+
+CREATE POLICY "Owners can delete their flocks"
+  ON flocks FOR DELETE
+  USING (auth.uid() = owner_id);
+
+-- ============================================
+-- FLOCK MEMBERS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS flock_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  flock_id UUID NOT NULL REFERENCES flocks(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(flock_id, user_id)
+);
+
+ALTER TABLE flock_members ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view members of their flocks"
+  ON flock_members FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Owners can manage flock members"
+  ON flock_members FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM flock_members fm
+      WHERE fm.flock_id = flock_members.flock_id
+      AND fm.user_id = auth.uid()
+      AND fm.role = 'owner'
+    )
+  );
+
+CREATE INDEX idx_flock_members_flock_id ON flock_members(flock_id);
+CREATE INDEX idx_flock_members_user_id ON flock_members(user_id);
+
+-- ============================================
 -- BIRDS TABLE
 -- ============================================
 CREATE TYPE bird_status AS ENUM ('active', 'monitoring', 'deceased');
@@ -94,6 +142,7 @@ CREATE TYPE date_type AS ENUM ('hatched', 'adopted');
 CREATE TABLE IF NOT EXISTS birds (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  flock_id UUID REFERENCES flocks(id),
   name TEXT NOT NULL,
   species TEXT NOT NULL,
   date_of_birth DATE,
@@ -117,6 +166,7 @@ CREATE POLICY "Users can CRUD own birds"
 
 CREATE INDEX idx_birds_user_id ON birds(user_id);
 CREATE INDEX idx_birds_status ON birds(status);
+CREATE INDEX idx_birds_flock_id ON birds(flock_id);
 
 -- ============================================
 -- DAILY LOGS TABLE
@@ -268,82 +318,6 @@ CREATE INDEX idx_reminders_user_id ON reminders(user_id);
 CREATE INDEX idx_reminders_bird_id ON reminders(bird_id);
 
 -- ============================================
--- FLOCKS TABLE
--- ============================================
-CREATE TABLE IF NOT EXISTS flocks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Security definer helpers to avoid RLS recursion
-CREATE OR REPLACE FUNCTION user_belongs_to_flock(p_flock_id UUID, p_user_id UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-  RETURN EXISTS (
-    SELECT 1 FROM flock_members WHERE flock_id = p_flock_id AND user_id = p_user_id
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION user_is_flock_admin(p_flock_id UUID, p_user_id UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-  RETURN EXISTS (
-    SELECT 1 FROM flock_members
-    WHERE flock_id = p_flock_id AND user_id = p_user_id AND role IN ('owner', 'admin')
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-ALTER TABLE flocks ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view flocks they belong to"
-  ON flocks FOR SELECT
-  USING (user_belongs_to_flock(id, auth.uid()));
-
-CREATE POLICY "Owners can create flocks"
-  ON flocks FOR INSERT
-  TO authenticated
-  WITH CHECK (auth.uid() = owner_id);
-
-CREATE POLICY "Owners can update their flocks"
-  ON flocks FOR UPDATE
-  USING (auth.uid() = owner_id);
-
-CREATE POLICY "Owners can delete their flocks"
-  ON flocks FOR DELETE
-  USING (auth.uid() = owner_id);
-
--- ============================================
--- FLOCK MEMBERS TABLE
--- ============================================
-CREATE TABLE IF NOT EXISTS flock_members (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  flock_id UUID NOT NULL REFERENCES flocks(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
-  joined_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(flock_id, user_id)
-);
-
-ALTER TABLE flock_members ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view members of their flocks"
-  ON flock_members FOR SELECT
-  USING (user_belongs_to_flock(flock_id, auth.uid()));
-
-CREATE POLICY "Owners and admins can add members"
-  ON flock_members FOR INSERT
-  TO authenticated
-  WITH CHECK (user_is_flock_admin(flock_id, auth.uid()));
-
-CREATE INDEX idx_flock_members_flock_id ON flock_members(flock_id);
-CREATE INDEX idx_flock_members_user_id ON flock_members(user_id);
-
--- ============================================
 -- FLOCK INVITES TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS flock_invites (
@@ -362,12 +336,12 @@ ALTER TABLE flock_invites ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view invites for their flocks"
   ON flock_invites FOR SELECT
-  USING (user_belongs_to_flock(flock_id, auth.uid()));
+  USING (auth.uid() = created_by);
 
 CREATE POLICY "Owners and admins can create invites"
   ON flock_invites FOR INSERT
   TO authenticated
-  WITH CHECK (user_is_flock_admin(flock_id, auth.uid()));
+  WITH CHECK (auth.uid() = created_by);
 
 CREATE INDEX idx_flock_invites_token ON flock_invites(token);
 CREATE INDEX idx_flock_invites_flock_id ON flock_invites(flock_id);
@@ -395,6 +369,34 @@ CREATE INDEX idx_flock_invites_flock_id ON flock_invites(flock_id);
 --   USING (bucket_id = 'bird-photos' AND auth.uid() = owner);
 
 -- ============================================
+-- TRIGGERS & FUNCTIONS
+-- ============================================
+
+-- Trigger to create profile + default flock on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  new_flock_id UUID;
+BEGIN
+  INSERT INTO public.profiles (id, full_name)
+  VALUES (NEW.id, NEW.raw_user_meta_data->>'full_name');
+
+  INSERT INTO public.flocks (name, owner_id)
+  VALUES ('My Flock', NEW.id)
+  RETURNING id INTO new_flock_id;
+
+  INSERT INTO public.flock_members (flock_id, user_id, role)
+  VALUES (new_flock_id, NEW.id, 'owner');
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================
 -- DEMO DATA: Bobo the Tutorial Cockatiel
 -- This bird is created as a template that onboarding can reference
 -- ============================================
@@ -404,12 +406,15 @@ CREATE OR REPLACE FUNCTION create_demo_bird(p_user_id UUID)
 RETURNS UUID AS $$
 DECLARE
   v_bird_id UUID;
+  v_flock_id UUID;
 BEGIN
+  SELECT id INTO v_flock_id FROM flocks WHERE owner_id = p_user_id LIMIT 1;
+
   INSERT INTO birds (
-    user_id, name, species, date_of_birth, date_type,
+    user_id, flock_id, name, species, date_of_birth, date_type,
     target_weight, current_weight, status, avatar_color, timezone, sort_order
   ) VALUES (
-    p_user_id, 'Bobo', 'Cockatiel', '2023-01-15', 'hatched',
+    p_user_id, v_flock_id, 'Bobo', 'Cockatiel', '2023-01-15', 'hatched',
     95.0, 96.5, 'active', '{"bg": "#fef3c7", "fg": "#f59e0b"}', 'UTC', 0
   )
   RETURNING id INTO v_bird_id;

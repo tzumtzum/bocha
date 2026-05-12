@@ -321,7 +321,38 @@ Run `supabase/migrations/001_initial_schema.sql` in the Supabase SQL Editor. Thi
 
 ### Bugs / Quality
 
-- [ ] **Zod validation on all forms** — Quick log, full log, edit bird, edit log, add retroactive log. Currently most forms use controlled `useState` without validation. Weight inputs accept negative numbers and empty strings.
+#### Active Bugs (P0 — Fix before release)
+
+All P0 bugs have been resolved. See Fixed Bugs below.
+
+#### Fixed Bugs
+
+- [x] **Schema mismatch on fresh installs** — `001_initial_schema.sql` previously created the `birds` table without `flock_id`, but all app queries filter by `flock_id`. Fresh databases failed with "column birds.flock_id does not exist".
+  - *Fix applied*: Updated `001_initial_schema.sql` to:
+    1. Create `flocks` and `flock_members` tables **before** `birds` (to satisfy the foreign key reference).
+    2. Add `flock_id UUID REFERENCES flocks(id)` to the `birds` table.
+    3. Update `handle_new_user` trigger to create a default flock + flock_members row on signup.
+    4. Update `create_demo_bird` function to look up the user's flock and insert with `flock_id`.
+    5. Add `idx_birds_flock_id` index.
+  - *Test*: Build passes (`npm run build`). All 86 unit tests and 10 E2E tests pass.
+
+- [x] **`/flock` empty state "Join a Flock" button is useless** — The empty state redirected to `/dashboard`, but users with birds had no join UI there.
+  - *Fix applied*: Replaced the redirect button with an inline invite token input form (matching `EmptyBirdState`) that extracts tokens from pasted URLs and navigates to `/invite/[token]`.
+  - *Test*: E2E tests cover the invite acceptance flow. Build passes.
+
+- [x] **Onboarding missing flock cache invalidation** — After onboarding created a default flock, `[FLOCK_KEY]` cache was stale for up to 30s.
+  - *Fix applied*: Imported `useQueryClient` and `FLOCK_KEY` in `onboarding/page.tsx`, then called `queryClient.invalidateQueries({ queryKey: [FLOCK_KEY] })` before redirecting to `/dashboard`.
+  - *Test*: Build passes. Unit tests pass.
+
+- [x] **Duplicate flock UI in Settings** — Settings had a full flock management section duplicating `/flock` with raw `fetch()`, untested logic, and missing cache invalidation.
+  - *Fix applied*: Removed the duplicate invite generation, member list, and member removal UI from `settings/page.tsx`. Replaced with a lightweight summary card using `useFlockData` that shows flock name, role, member count, and a "Manage Flock" link to `/flock`.
+  - *Test*: Build passes. E2E settings page test passes.
+
+- [x] **Settings flock invite sends wrong flock_id** — `settings/page.tsx` previously sent `membership.id.split("-")[0]` (a truncated flock_members row UUID) instead of the actual `flockId`. This caused invite generation to always fail with a 404/403. **Fixed earlier**: The `handleGenerateInvite` function now correctly uses the `flockId` state variable.
+
+#### Remaining Quality Issues
+
+- [ ] **Zod validation on all forms** — Quick log, full log, edit bird, edit log, add retroactive log. Currently most forms use controlled `useState` without validation. Weight inputs accept negative numbers and empty strings. This is a broader refactor tracked for Sprint 3.
 
 ## Known Issues
 
@@ -334,6 +365,11 @@ Run `supabase/migrations/001_initial_schema.sql` in the Supabase SQL Editor. Thi
   - *Recovery*: If you have multiple empty accounts, delete them from Supabase Auth dashboard. The next login will match the old account by email.
 - **Flock RLS self-referential policies** — Original `002_flock_sharing.sql` used recursive subqueries in `flock_members` RLS that caused rows to be hidden in some PostgreSQL configurations. **Fixed** by `003_fix_flock_rls.sql` which replaces them with simpler non-recursive policies.
 - **Debug endpoint available** — `/api/debug/user-data` (POST with `Authorization: Bearer <token>`) and `/debug` page help diagnose auth/data visibility issues in production.
+- ** birds.flock_id missing from 001_initial_schema.sql (P0)** — **Fixed**: `001_initial_schema.sql` now creates `flocks` and `flock_members` before `birds`, includes `flock_id UUID REFERENCES flocks(id)`, and the `handle_new_user` trigger creates a default flock on signup.
+- **`/flock` empty state Join button (P1)** — **Fixed**: The empty state now has an inline invite token input form instead of redirecting to `/dashboard`.
+- **Onboarding flock cache invalidation (P1)** — **Fixed**: Onboarding now invalidates `[FLOCK_KEY]` via `useQueryClient` before redirecting.
+- **Duplicate flock UI (P1)** — **Fixed**: Settings flock management UI has been replaced with a lightweight summary card linking to `/flock`.
+- **Settings flock_id bug (P0)** — **Fixed**: Settings `handleGenerateInvite` now correctly uses the `flockId` state variable.
 
 ## Testing & Regression Policy
 

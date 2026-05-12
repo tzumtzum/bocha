@@ -29,17 +29,16 @@ import {
   Sparkles,
   ArrowUp,
   ArrowDown,
+  ArrowRight,
   Maximize,
   Minimize,
   Home,
   Users,
-  Copy,
-  Check,
-  UserPlus,
   Bug,
 } from "lucide-react";
 import { useTelegramContext } from "@/components/layout/telegram-provider";
 import { toast, confirmDialog } from "@/lib/toast";
+import { useFlockData } from "@/lib/hooks/use-flock";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -61,15 +60,10 @@ export default function SettingsPage() {
   const [upgrading, setUpgrading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Flock sharing state
-  const [flockId, setFlockId] = useState("");
-  const [flockName, setFlockName] = useState("");
-  const [flockMembers, setFlockMembers] = useState<{ id: string; user_id: string; role: string; full_name: string | null }[]>([]);
-  const [userRole, setUserRole] = useState<string>("");
-  const [inviteLink, setInviteLink] = useState("");
-  const [inviteRole, setInviteRole] = useState<"admin" | "member">("member");
-  const [generatingInvite, setGeneratingInvite] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { data: flockData } = useFlockData();
+  const flock = flockData?.flock;
+  const flockMembers = flockData?.members ?? [];
+  const userRole = flockData?.myRole ?? "";
 
   useEffect(() => {
     async function fetchProfile() {
@@ -100,42 +94,6 @@ export default function SettingsPage() {
         .select("flock_id, role")
         .eq("user_id", user.id);
 
-      const membership = memberships?.[0];
-      if (membership) {
-        setUserRole(membership.role);
-        setFlockId(membership.flock_id);
-
-        // Fetch flock details
-        const { data: flockData } = await supabase
-          .from("flocks")
-          .select("name")
-          .eq("id", membership.flock_id)
-          .single();
-
-        if (flockData) {
-          setFlockName(flockData.name || "My Flock");
-        }
-
-        // Fetch flock members with profiles
-        const { data: members } = await supabase
-          .from("flock_members")
-          .select("id, user_id, role, profiles(full_name)")
-          .eq("flock_id", membership.flock_id)
-          .order("joined_at", { ascending: true });
-
-        if (members) {
-          setFlockMembers(
-            members.map((m: Record<string, unknown>) => ({
-              id: m.id as string,
-              user_id: m.user_id as string,
-              role: m.role as string,
-              full_name: (m.profiles as Record<string, unknown> | null)?.full_name as string | null,
-            }))
-          );
-        }
-      }
-
-      // Fetch archived birds (from user's flocks)
       const flockIds = memberships?.map((m: { flock_id: string }) => m.flock_id) ?? [];
       let archived: unknown[] = [];
       let active: unknown[] = [];
@@ -353,68 +311,7 @@ export default function SettingsPage() {
     toast(`Imported ${imported} log entries!`, { type: "success" });
   }
 
-  async function handleGenerateInvite() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
 
-    const membership = flockMembers.find((m) => m.user_id === user.id);
-    if (!membership) return;
-
-    setGeneratingInvite(true);
-    try {
-      const res = await fetch("/api/flock/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ flock_id: membership.id ? membership.id.split("-")[0] : "", role: inviteRole }),
-      });
-
-      const result = await res.json();
-      if (res.ok && result.inviteUrl) {
-        setInviteLink(result.inviteUrl);
-      } else {
-        toast(result.error || "Failed to generate invite", { type: "error" });
-      }
-    } catch {
-      toast("Failed to generate invite", { type: "error" });
-    }
-    setGeneratingInvite(false);
-  }
-
-  async function handleCopyLink() {
-    if (!inviteLink) return;
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast("Failed to copy link", { type: "error" });
-    }
-  }
-
-  async function handleRevokeMember(userId: string) {
-    confirmDialog("Remove this member from the flock?", async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase
-        .from("flock_members")
-        .delete()
-        .eq("flock_id", flockId)
-        .eq("user_id", userId);
-
-      if (error) {
-        toast("Failed to remove member", { type: "error" });
-        return;
-      }
-
-      setFlockMembers((prev) => prev.filter((m) => m.user_id !== userId));
-      toast("Member removed", { type: "success" });
-    });
-  }
 
   return (
     <div className="p-4 space-y-4 pb-24">
@@ -866,98 +763,42 @@ export default function SettingsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm font-medium">{flockName || "My Flock"}</p>
-            <p className="text-xs text-slate-500">
-              Your role: <span className="capitalize font-medium">{userRole}</span>
-            </p>
-          </div>
-
-          {/* Member list */}
-          {flockMembers.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-slate-500">Members</p>
-              {flockMembers.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-500">
-                      {(member.full_name || "?").charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm">{member.full_name || "Unknown"}</p>
-                      <p className="text-[10px] text-slate-400 capitalize">{member.role}</p>
-                    </div>
-                  </div>
-                  {userRole === "owner" && member.role !== "owner" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
-                      onClick={() => handleRevokeMember(member.user_id)}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Generate invite */}
-          {userRole === "owner" || userRole === "admin" ? (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-slate-500">Invite Member</p>
-              <div className="flex gap-2">
-                <select
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as "admin" | "member")}
-                  className="text-sm border rounded-lg px-2 py-1.5 bg-white dark:bg-slate-900 dark:border-slate-700"
-                >
-                  <option value="member">Member</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={handleGenerateInvite}
-                  disabled={generatingInvite}
-                >
-                  <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-                  {generatingInvite ? "Generating..." : "Generate Link"}
-                </Button>
+          {flock ? (
+            <>
+              <div>
+                <p className="text-sm font-medium">{flock.name || "My Flock"}</p>
+                <p className="text-xs text-slate-500">
+                  Your role: <span className="capitalize font-medium">{userRole}</span>
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {flockMembers.length} member{flockMembers.length !== 1 ? "s" : ""}
+                </p>
               </div>
-
-              {inviteLink && (
-                <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                  <p className="text-xs text-slate-600 dark:text-slate-300 truncate flex-1">
-                    {inviteLink}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
-                    onClick={handleCopyLink}
-                  >
-                    {copied ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                  </Button>
-                </div>
-              )}
-              <p className="text-[10px] text-slate-400">
-                Link expires in 24 hours or after first use.
-              </p>
-            </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => router.push("/flock")}
+              >
+                Manage Flock
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </>
           ) : (
-            <p className="text-xs text-slate-400">
-              Only owners and admins can invite new members.
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                You are not part of a flock yet.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => router.push("/flock")}
+              >
+                Create or Join a Flock
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

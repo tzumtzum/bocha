@@ -29,6 +29,8 @@ export default function FlockPage() {
   const [copied, setCopied] = useState(false);
   const [inviteRole, setInviteRole] = useState<"member" | "admin">("member");
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [joinToken, setJoinToken] = useState("");
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   const flock = flockData?.flock;
   const members = flockData?.members ?? [];
@@ -98,14 +100,45 @@ export default function FlockPage() {
                   Create Flock
                 </Link>
               </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => router.push("/dashboard")}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setJoinError(null);
+                  let token = joinToken.trim();
+                  if (!token) {
+                    setJoinError("Please enter an invite link or token");
+                    return;
+                  }
+                  const urlMatch = token.match(/\/invite\/([a-f0-9]+)/);
+                  if (urlMatch) token = urlMatch[1];
+                  router.push(`/invite/${token}`);
+                }}
+                className="space-y-2"
               >
-                Join a Flock
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
+                <Input
+                  placeholder="Paste invite link or token"
+                  value={joinToken}
+                  onChange={(e) => {
+                    setJoinToken(e.target.value);
+                    setJoinError(null);
+                  }}
+                  className="text-sm"
+                />
+                {joinError && (
+                  <p className="text-xs text-red-600 dark:text-red-400 text-left">
+                    {joinError}
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="w-full"
+                  disabled={!joinToken.trim()}
+                >
+                  Join a Flock
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </form>
             </div>
           </CardContent>
         </Card>
