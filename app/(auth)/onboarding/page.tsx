@@ -21,6 +21,7 @@ import { Slider } from "@/components/ui/slider";
 import { Bird, ChevronRight, Loader2, Sparkles, Weight } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { FLOCK_KEY } from "@/lib/hooks/use-flock";
+import { DASHBOARD_KEY } from "@/lib/hooks/use-dashboard-data";
 
 interface OnboardingData {
   name: string;
@@ -212,6 +213,7 @@ export default function OnboardingPage() {
 
     localStorage.removeItem(STORAGE_KEY);
     queryClient.invalidateQueries({ queryKey: [FLOCK_KEY] });
+    queryClient.invalidateQueries({ queryKey: [DASHBOARD_KEY] });
     router.push("/dashboard");
   }
 

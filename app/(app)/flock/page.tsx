@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/lib/toast";
 import { useFlockData, useCreateInvite } from "@/lib/hooks/use-flock";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import {
   Users,
   Crown,
@@ -25,6 +26,7 @@ import Link from "next/link";
 export default function FlockPage() {
   const router = useRouter();
   const { data: flockData, isLoading } = useFlockData();
+  const { data: dashboardData } = useDashboardData();
   const createInvite = useCreateInvite();
   const [copied, setCopied] = useState(false);
   const [inviteRole, setInviteRole] = useState<"member" | "admin">("member");
@@ -190,6 +192,56 @@ export default function FlockPage() {
           ))}
         </CardContent>
       </Card>
+
+      {/* Birds */}
+      {dashboardData?.birds && dashboardData.birds.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              Birds ({dashboardData.birds.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {dashboardData.birds.map((bird) => (
+              <div
+                key={bird.id}
+                className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{
+                      backgroundColor: bird.avatar_color?.bg || "#e0f2fe",
+                      color: bird.avatar_color?.fg || "#0ea5e9",
+                    }}
+                  >
+                    {bird.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {bird.name}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {bird.species}
+                      {bird.current_weight != null && (
+                        <span className="ml-1">· {bird.current_weight}g</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => router.push(`/birds/${bird.id}`)}
+                >
+                  View
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Add Bird */}
       <Button asChild variant="outline" className="w-full">

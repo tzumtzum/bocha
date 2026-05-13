@@ -18,7 +18,22 @@ vi.mock("@/lib/hooks/use-flock", () => ({
   }),
 }));
 
+vi.mock("@/lib/hooks/use-dashboard-data", () => ({
+  DASHBOARD_KEY: "dashboard",
+  useDashboardData: () => ({
+    data: null,
+    isLoading: false,
+    isError: false,
+  }),
+  useInvalidateAppData: () => ({
+    invalidateDashboard: vi.fn(),
+    invalidateProfile: vi.fn(),
+    invalidateFlock: vi.fn(),
+  }),
+}));
+
 import { useFlockData } from "@/lib/hooks/use-flock";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 
 function createWrapper() {
   const queryClient = new QueryClient({
