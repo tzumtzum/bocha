@@ -37,13 +37,19 @@ export function useFlockData() {
       if (!user) throw new Error("Not authenticated");
 
       // Get user's flock membership
-      const { data: membership, error: membershipError } = await supabase
+      const { data: memberships, error: membershipError } = await supabase
         .from("flock_members")
         .select("flock_id, role")
         .eq("user_id", user.id)
-        .single();
+        .limit(1);
 
-      if (membershipError || !membership) {
+      if (membershipError) {
+        console.error("[useFlockData] membership error:", membershipError);
+        return { flock: null, members: [], myRole: null };
+      }
+
+      const membership = memberships?.[0];
+      if (!membership) {
         return { flock: null, members: [], myRole: null };
       }
 

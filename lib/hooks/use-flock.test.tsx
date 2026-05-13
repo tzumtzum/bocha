@@ -18,6 +18,9 @@ function createMockQueryBuilder(
       order: vi.fn().mockImplementation(() => {
         return Promise.resolve({ data: currentRows, error: null });
       }),
+      limit: vi.fn().mockImplementation(() => {
+        return Promise.resolve({ data: currentRows.slice(0, 1), error: null });
+      }),
       single: vi.fn().mockImplementation(() => {
         const row = currentRows.length > 0 ? currentRows[0] : null;
         return Promise.resolve({ data: row, error: row ? null : new Error("not found") });
