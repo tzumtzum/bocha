@@ -222,16 +222,6 @@ export default function SettingsPage() {
     // Delete user's birds (cascade will handle logs)
     await supabase.from("birds").delete().eq("user_id", user.id);
 
-    // In demo mode, clear all localStorage data
-    const isDemo =
-      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder");
-    if (isDemo) {
-      Object.keys(localStorage)
-        .filter((key) => key.startsWith("bobo_demo_"))
-        .forEach((key) => localStorage.removeItem(key));
-    }
-
     // Sign out
     await supabase.auth.signOut();
     router.push("/login");

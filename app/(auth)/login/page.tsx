@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bird, Loader2, Play } from "lucide-react";
+import { Bird, Loader2 } from "lucide-react";
 import { TelegramAuthButton, useIsInTelegram } from "@/components/auth/telegram-auth";
 
 export default function LoginPage() {
@@ -96,32 +96,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
-
-  async function handleDemoMode() {
-    if (!isDemoEnabled) {
-      setError("Demo mode is not enabled");
-      return;
-    }
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: "demo@example.com",
-        password: "demo",
-      });
-      if (error) throw error;
-      router.push("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Demo mode failed");
-      setLoading(false);
-    }
-  }
-
-  const isPlaceholder =
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder");
-
-  const isDemoEnabled =
-    process.env.NEXT_PUBLIC_ENABLE_DEMO === "true" || isPlaceholder;
 
   const showEmail = !isInTelegram || showEmailForm;
 
@@ -263,18 +237,6 @@ export default function LoginPage() {
                         {mode === "signin" ? "Sign In" : "Sign Up"}
                       </Button>
                     </form>
-
-                    {isDemoEnabled && (
-                      <Button
-                        variant="secondary"
-                        className="w-full bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900 dark:text-sky-200"
-                        onClick={handleDemoMode}
-                        disabled={loading}
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        Try Demo Mode
-                      </Button>
-                    )}
 
                     <p className="text-center text-sm text-slate-500 dark:text-slate-400">
                       {mode === "signin" ? (

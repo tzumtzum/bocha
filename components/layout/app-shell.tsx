@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SyncIndicator } from "@/components/layout/sync-indicator";
-import { DemoBanner } from "@/components/layout/demo-banner";
+
 import { TelegramThemeSync, TelegramSafeArea } from "@/components/layout/telegram-shell";
 import { useTelegramContext } from "./telegram-provider";
 
@@ -45,7 +45,6 @@ export function AppShell({
         }`}
         style={safeAreaStyle}
       >
-        <DemoBanner />
         <SyncIndicator />
         <main className="max-w-md mx-auto min-h-screen">{children}</main>
         <BottomNav

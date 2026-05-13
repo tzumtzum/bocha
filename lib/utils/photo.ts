@@ -50,32 +50,3 @@ export function compressImage(
     img.src = url;
   });
 }
-
-/**
- * Count photos for a given bird in demo mode.
- */
-export function getBirdPhotoCount(birdId: string): number {
-  try {
-    const raw = localStorage.getItem("bobo_demo_photos");
-    if (!raw) return 0;
-    const photos = JSON.parse(raw) as { path: string }[];
-    return photos.filter((p) => p.path.startsWith(`${birdId}/`)).length;
-  } catch {
-    return 0;
-  }
-}
-
-/**
- * Get public URL for a photo in demo mode.
- * In real Supabase this would use getPublicUrl; in demo mode we return the data URL directly.
- */
-export function getDemoPhotoUrl(path: string): string | null {
-  try {
-    const raw = localStorage.getItem("bobo_demo_photos");
-    if (!raw) return null;
-    const photos = JSON.parse(raw) as { path: string; dataUrl: string }[];
-    return photos.find((p) => p.path === path)?.dataUrl || null;
-  } catch {
-    return null;
-  }
-}

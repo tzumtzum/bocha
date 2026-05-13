@@ -67,7 +67,8 @@ export function useFlockData() {
 
       if (membersError) {
         console.error("[useFlockData] members error:", membersError);
-        throw membersError;
+        // Return flock data with empty members rather than crashing the UI
+        return { flock, members: [], myRole: membership.role };
       }
 
       const members: FlockMember[] = (membersData ?? []).map((m: Record<string, unknown>) => ({

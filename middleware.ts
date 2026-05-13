@@ -2,12 +2,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const isPlaceholder =
-  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder") ||
-  !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.includes("placeholder");
-
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);
   const pathname = request.nextUrl.pathname;
@@ -22,11 +16,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/sw.js") ||
     pathname.startsWith("/workbox-")
   ) {
-    return response;
-  }
-
-  // Demo mode bypasses auth
-  if (isPlaceholder) {
     return response;
   }
 

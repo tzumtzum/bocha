@@ -21,7 +21,7 @@ const WeightChart = dynamic(
 import { SafeImage } from "@/components/ui/safe-image";
 import { formatWeight, formatDate, formatTime } from "@/lib/utils";
 import { useWeightUnit } from "@/lib/hooks/use-weight-unit";
-import { getDemoPhotoUrl } from "@/lib/utils/photo";
+
 import {
   Dialog,
   DialogContent,
@@ -694,7 +694,7 @@ export default function BirdDetailPage() {
               {log.poop_photo_url && (
                 <div className="relative mt-2 w-full h-24">
                   <SafeImage
-                    src={getDemoPhotoUrl(log.poop_photo_url) || log.poop_photo_url}
+                    src={log.poop_photo_url}
                     alt="Droppings photo"
                     fill
                     className="object-cover rounded-lg border border-slate-200 dark:border-slate-700"

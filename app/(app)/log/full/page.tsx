@@ -15,8 +15,8 @@ import { getTodayInTimezone } from "@/lib/utils";
 import { useWeightUnit } from "@/lib/hooks/use-weight-unit";
 import { Loader2, Save, X, ImagePlus } from "lucide-react";
 import { PageBackButton } from "@/components/layout/page-back-button";
-import { compressImage, getBirdPhotoCount } from "@/lib/utils/photo";
-import { toast } from "@/lib/toast";
+import { compressImage } from "@/lib/utils/photo";
+
 import { SafeImage } from "@/components/ui/safe-image";
 
 const OVERALL_STATUS = [
@@ -433,11 +433,6 @@ function FullLogForm() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file || !birdId) return;
-                    if (getBirdPhotoCount(birdId) >= 3) {
-                      toast("This bird already has 3 photos. Delete one first.", { type: "warning" });
-                      e.target.value = "";
-                      return;
-                    }
                     setPhotoFile(file);
                     const reader = new FileReader();
                     reader.onloadend = () => setPhotoPreview(reader.result as string);

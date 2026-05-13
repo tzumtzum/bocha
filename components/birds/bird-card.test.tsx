@@ -6,6 +6,21 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: { id: "1" } }, error: null }),
+    },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: () => Promise.resolve({ data: { weight_unit: "g" }, error: null }),
+        }),
+      }),
+    }),
+  }),
+}));
+
 describe("BirdCard", () => {
   const mockBird = {
     id: "bird-1",

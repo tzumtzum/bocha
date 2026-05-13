@@ -25,7 +25,6 @@ describe("LoginPage", () => {
   beforeEach(() => {
     mockPush.mockClear();
     mockReplace.mockClear();
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://placeholder.supabase.co");
   });
 
   it("renders login form immediately", () => {
@@ -33,11 +32,6 @@ describe("LoginPage", () => {
     expect(screen.getByText(/welcome back/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-  });
-
-  it("shows Try Demo Mode button when placeholder URL is set", () => {
-    render(<LoginPage />);
-    expect(screen.getByRole("button", { name: /try demo mode/i })).toBeInTheDocument();
   });
 
   it("redirects to dashboard on successful sign in", async () => {
